@@ -97,6 +97,21 @@ export default function LoginPage() {
             </Button>
           </form>
 
+          {/* Botón de Google */}
+          <div className="mt-4">
+            <a
+              href="http://localhost:4000/api/v1/auth/google"
+              className="flex items-center justify-center gap-2 w-full py-2.5 px-4 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition"
+            >
+              <img
+                src="https://www.google.com/favicon.ico"
+                alt="Google"
+                className="w-5 h-5"
+              />
+              Iniciar sesión con Google
+            </a>
+          </div>
+
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-gray-200" />
             <span className="text-xs text-gray-400">¿No tienes cuenta?</span>

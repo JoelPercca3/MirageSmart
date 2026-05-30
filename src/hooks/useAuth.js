@@ -13,7 +13,22 @@ export const useLogin = () => {
     mutationFn: authAPI.login,
     onSuccess: (res) => {
       setAuth(res.data.user, res.data.tokens);
-      toast.success(`¡Bienvenido, ${res.data.user.nombre}!`);
+      const hour = new Date().getHours();
+      const greeting =
+        hour < 12
+          ? "🌅 ¡Buenos días"
+          : hour < 18
+            ? "☀️ ¡Buenas tardes"
+            : "🌙 ¡Buenas noches";
+      toast.success(`${greeting}, ${res.data.user.nombre.split(" ")[0]}!`, {
+        duration: 4000,
+        style: {
+          background: "linear-gradient(to right, #ef4444, #f97316)",
+          color: "#fff",
+          fontWeight: "600",
+        },
+        icon: "👋",
+      });
       navigate("/");
     },
     onError: (err) => {
@@ -21,7 +36,6 @@ export const useLogin = () => {
     },
   });
 };
-
 export const useRegister = () => {
   const navigate = useNavigate();
 

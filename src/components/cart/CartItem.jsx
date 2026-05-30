@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trash2, Plus, Minus } from "lucide-react";
 import { useUpdateCartItem, useRemoveCartItem } from "../../hooks/useCart.js";
@@ -7,6 +8,28 @@ export default function CartItem({ item }) {
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
 
+  // 🔥 Obtener la URL correcta de la imagen desde product_images
+  const getImageUrl = () => {
+    // Si el item tiene imagen directa
+    if (item.imagen) return item.imagen;
+    // Si el item tiene product_images (array de imágenes)
+    if (item.product_images && item.product_images.length > 0) {
+      return item.product_images[0].url;
+    }
+    // Imagen por defecto
+    return "https://placehold.co/80x80?text=Sin+imagen";
+  };
+
+  // 🔥 Obtener el nombre correcto del producto
+  const getProductName = () => {
+    return item.nombre || item.product_name || "Producto";
+  };
+
+  // 🔥 Obtener el precio unitario correcto
+  const getUnitPrice = () => {
+    return Number(item.precio_unitario) || Number(item.price) || 0;
+  };
+
   return (
     <motion.div
       layout
@@ -15,24 +38,29 @@ export default function CartItem({ item }) {
       exit={{ opacity: 0, x: -20 }}
       className="flex gap-3 bg-white rounded-xl p-3 border border-gray-100"
     >
-      {/* Imagen */}
-      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-        {item.imagen ? (
-          <img
-            src={item.imagen}
-            alt={item.nombre}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-gray-200" />
-        )}
-      </div>
+      {/* Imagen clickeable */}
+      <Link
+        to={`/products/${item.product_id}`}
+        className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 hover:opacity-80 transition"
+      >
+        <img
+          src={getImageUrl()}
+          alt={getProductName()}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.src = "https://placehold.co/80x80?text=Error";
+          }}
+        />
+      </Link>
 
-      {/* Info */}
+      {/* Info - Nombre clickeable */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-800 truncate">
-          {item.nombre}
-        </p>
+        <Link
+          to={`/products/${item.product_id}`}
+          className="text-sm font-medium text-gray-800 hover:text-red-500 transition truncate block"
+        >
+          {getProductName()}
+        </Link>
         {item.variante_opciones && (
           <p className="text-xs text-gray-400 mt-0.5">
             {Object.entries(JSON.parse(item.variante_opciones || "{}"))
@@ -41,7 +69,7 @@ export default function CartItem({ item }) {
           </p>
         )}
         <p className="text-red-500 font-bold text-sm mt-1">
-          {formatPrice(Number(item.precio_unitario) * item.cantidad)}
+          {formatPrice(getUnitPrice() * item.cantidad)}
         </p>
       </div>
 

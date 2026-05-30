@@ -18,6 +18,9 @@ const schema = z.object({
     .regex(/[A-Z]/, "Debe tener al menos una mayúscula")
     .regex(/[0-9]/, "Debe tener al menos un número"),
   telefono: z.string().optional(),
+  acceptTerms: z.boolean().refine((val) => val === true, {
+    message: "Debes aceptar los Términos y Condiciones",
+  }),
 });
 
 export default function RegisterPage() {
@@ -30,9 +33,16 @@ export default function RegisterPage() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
+    defaultValues: {
+      acceptTerms: false,
+    },
   });
 
-  const onSubmit = (data) => registerMutation.mutate(data);
+  const onSubmit = (data) => {
+    // Eliminamos acceptTerms del envío al backend
+    const { acceptTerms, ...userData } = data;
+    registerMutation.mutate(userData);
+  };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
@@ -105,6 +115,35 @@ export default function RegisterPage() {
               <li>• Al menos un número</li>
             </ul>
 
+            {/* ✅ CHECKBOX DE TÉRMINOS - AGREGAR AQUÍ */}
+            <div className="mt-2">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500"
+                  {...register("acceptTerms")}
+                />
+                <span className="text-xs text-gray-600">
+                  Acepto los{" "}
+                  <Link to="/terminos" className="text-red-500 hover:underline">
+                    Términos y Condiciones
+                  </Link>{" "}
+                  y la{" "}
+                  <Link
+                    to="/privacidad"
+                    className="text-red-500 hover:underline"
+                  >
+                    Política de Privacidad
+                  </Link>
+                </span>
+              </label>
+              {errors.acceptTerms && (
+                <p className="text-xs text-red-500 mt-1">
+                  {errors.acceptTerms.message}
+                </p>
+              )}
+            </div>
+
             <Button
               type="submit"
               size="lg"
@@ -127,13 +166,6 @@ export default function RegisterPage() {
             </Button>
           </Link>
         </div>
-
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Al registrarte aceptas nuestros{" "}
-          <a href="#" className="underline hover:text-gray-600">
-            Términos y condiciones
-          </a>
-        </p>
       </motion.div>
     </div>
   );

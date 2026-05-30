@@ -27,7 +27,9 @@ export default function OrdersPage() {
       </div>
     );
 
-  const orders = data?.data || [];
+  const orders = data?.rows || data?.data || [];
+  console.log("data completo:", data);
+  console.log("orders:", orders);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">

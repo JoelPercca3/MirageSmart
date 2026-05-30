@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,19 +7,21 @@ import { motion } from "framer-motion";
 import { MapPin, Truck, Tag, ChevronDown, ChevronUp } from "lucide-react";
 import { useCart, useApplyCoupon } from "../hooks/useCart.js";
 import { useCreateOrder } from "../hooks/useOrders.js";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { userAPI } from "../api/user.api.js";
 import useCartStore from "../store/useCartStore.js";
 import Button from "../components/ui/Button.jsx";
 import { formatPrice } from "../utils/formatPrice.js";
 import api from "../api/axios.js";
+import { useCulqiPayment } from "../hooks/usePayment.js";
+import AddressModal from "../components/address/AddressModal.jsx";
 
 const schema = z.object({
-  address_id: z
+  address_id: z.coerce
     .number({ required_error: "Selecciona una dirección" })
     .int()
     .positive(),
-  shipping_method_id: z
+  shipping_method_id: z.coerce
     .number({ required_error: "Selecciona método de envío" })
     .int()
     .positive(),
@@ -31,12 +33,19 @@ export default function CheckoutPage() {
   const [couponInput, setCouponInput] = useState("");
   const [couponData, setCouponData] = useState(null);
   const [showNotes, setShowNotes] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [termsError, setTermsError] = useState("");
+  const [showAddressModal, setShowAddressModal] = useState(false);
 
-  const { items, subtotal } = useCartStore();
+  const { items, subtotal, clearCart } = useCartStore();
   const createOrder = useCreateOrder();
   const applyCoupon = useApplyCoupon();
+  const { openCulqi, loading: culqiLoading } = useCulqiPayment();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const { data: addresses } = useQuery({
+  const { data: addresses, refetch: refetchAddresses } = useQuery({
     queryKey: ["addresses"],
     queryFn: () => userAPI.getAddresses(),
     select: (res) => res.data,
@@ -44,7 +53,7 @@ export default function CheckoutPage() {
 
   const { data: shippingMethods } = useQuery({
     queryKey: ["shipping-methods"],
-    queryFn: () => api.get("/admin/shipping"),
+    queryFn: () => api.get("/shipping"),
     select: (res) => res.data,
   });
 
@@ -52,7 +61,6 @@ export default function CheckoutPage() {
     register,
     handleSubmit,
     watch,
-    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
@@ -73,10 +81,39 @@ export default function CheckoutPage() {
     });
   };
 
-  const onSubmit = (data) => {
-    createOrder.mutate({
-      ...data,
-      coupon_code: couponData ? couponInput : undefined,
+  const onSubmit = async (data) => {
+    if (!acceptTerms) {
+      setTermsError("Debes aceptar los Términos y Condiciones para continuar");
+      return;
+    }
+    setTermsError("");
+
+    try {
+      const order = await createOrder.mutateAsync({
+        address_id: Number(data.address_id),
+        shipping_method_id: Number(data.shipping_method_id),
+        coupon_code: couponData ? couponInput : undefined,
+        notas_cliente: data.notas_cliente || null,
+      });
+      setCreatedOrder(order.data || order);
+    } catch (err) {
+      console.error("Error al crear la orden:", err);
+    }
+  };
+
+  const handleCulqiPayment = () => {
+    if (!createdOrder) return;
+
+    openCulqi(createdOrder, {
+      onSuccess: () => {
+        clearCart();
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        queryClient.invalidateQueries({ queryKey: ["order", createdOrder.id] });
+        navigate(`/pedido/${createdOrder.id}/exito`);
+      },
+      onError: (error) => {
+        console.error("Error en pago:", error);
+      },
     });
   };
 
@@ -103,7 +140,7 @@ export default function CheckoutPage() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* ── Columna izquierda ── */}
+          {/* COLUMNA IZQUIERDA */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             {/* Dirección */}
             <div className="bg-white rounded-2xl border border-gray-100 p-6">
@@ -117,7 +154,12 @@ export default function CheckoutPage() {
                   <p className="text-gray-500 text-sm mb-3">
                     No tienes direcciones guardadas
                   </p>
-                  <Button variant="outline" size="sm" type="button">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    onClick={() => setShowAddressModal(true)}
+                  >
                     + Agregar dirección
                   </Button>
                 </div>
@@ -151,7 +193,7 @@ export default function CheckoutPage() {
                           {addr.calle}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {addr.ciudad}, {addr.departamento}
+                          {addr.distrito}, {addr.provincia}, {addr.departamento}
                         </p>
                         {addr.telefono_contacto && (
                           <p className="text-sm text-gray-400">
@@ -161,6 +203,13 @@ export default function CheckoutPage() {
                       </div>
                     </label>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => setShowAddressModal(true)}
+                    className="mt-2 text-sm text-red-500 hover:text-red-600 font-medium flex items-center gap-1"
+                  >
+                    + Agregar nueva dirección
+                  </button>
                   {errors.address_id && (
                     <p className="text-xs text-red-500">
                       {errors.address_id.message}
@@ -307,7 +356,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* ── Resumen del pedido ── */}
+          {/* RESUMEN */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-24">
               <h2 className="font-bold text-gray-800 mb-4">
@@ -369,22 +418,101 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full mt-6"
-                loading={createOrder.isPending}
-              >
-                Confirmar pedido
-              </Button>
+              {/* Términos */}
+              <div className="mt-5 pt-3 border-t">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={acceptTerms}
+                    onChange={(e) => {
+                      setAcceptTerms(e.target.checked);
+                      if (e.target.checked) setTermsError("");
+                    }}
+                    className="mt-0.5 w-4 h-4 text-red-500 border-gray-300 rounded focus:ring-red-500"
+                  />
+                  <span className="text-xs text-gray-600 leading-relaxed">
+                    He leído y acepto los{" "}
+                    <Link
+                      to="/terminos"
+                      className="text-red-500 hover:underline"
+                      target="_blank"
+                    >
+                      Términos y Condiciones
+                    </Link>
+                    , la{" "}
+                    <Link
+                      to="/privacidad"
+                      className="text-red-500 hover:underline"
+                      target="_blank"
+                    >
+                      Política de Privacidad
+                    </Link>{" "}
+                    y la{" "}
+                    <Link
+                      to="/reembolsos"
+                      className="text-red-500 hover:underline"
+                      target="_blank"
+                    >
+                      Política de Reembolsos
+                    </Link>
+                  </span>
+                </label>
+                {termsError && (
+                  <p className="text-xs text-red-500 mt-2">{termsError}</p>
+                )}
+              </div>
 
-              <p className="text-xs text-gray-400 text-center mt-3">
-                🔒 Pago 100% seguro y protegido
-              </p>
+              {/* Pago */}
+              {!createdOrder ? (
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full mt-4"
+                  loading={createOrder.isPending}
+                >
+                  Crear pedido
+                </Button>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mt-4 flex flex-col gap-3"
+                >
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+                    <p className="text-green-700 text-sm font-medium">
+                      ✅ Pedido #{createdOrder.codigo_orden} creado
+                    </p>
+                    <p className="text-green-600 text-xs mt-1">
+                      Completa el pago para confirmar
+                    </p>
+                  </div>
+                  <Button
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
+                    loading={culqiLoading}
+                    onClick={handleCulqiPayment}
+                  >
+                    💳 Pagar {formatPrice(createdOrder.total)} con Culqi
+                  </Button>
+                  <p className="text-xs text-gray-400 text-center">
+                    🔒 Pago seguro — Visa, Mastercard, Amex
+                  </p>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
       </form>
+
+      {/* MODAL DIRECCIONES */}
+      <AddressModal
+        isOpen={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onAddressAdded={() => {
+          refetchAddresses();
+          setShowAddressModal(false);
+        }}
+      />
     </div>
   );
 }

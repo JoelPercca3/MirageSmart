@@ -11,4 +11,5 @@ export const userAPI = {
   setDefaultAddress: (id) => api.patch(`/users/addresses/${id}/default`),
   getNotifications: () => api.get("/users/notifications"),
   markAsRead: (id) => api.patch(`/users/notifications/${id}/read`),
+  createAddress: (data) => api.post("/users/addresses", data),
 };

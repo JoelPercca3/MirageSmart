@@ -1,10 +1,15 @@
+// src/components/ui/Badge.jsx
+
 import { cn } from "../../utils/cn.js";
 
 const variants = {
   red: "bg-red-500 text-white",
   green: "bg-green-500 text-white",
-  yellow: "bg-yellow-400 text-white",
-  gray: "bg-gray-200 text-gray-700",
+
+  // FIX: yellow con texto oscuro
+  yellow: "bg-yellow-400 text-yellow-900",
+
+  gray: "bg-gray-200 text-gray-800",
   blue: "bg-blue-500 text-white",
 };
 

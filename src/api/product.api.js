@@ -7,5 +7,5 @@ export const productAPI = {
   search: (q, params) =>
     api.get("/products/search", { params: { q, ...params } }),
   getRelated: (id) => api.get(`/products/${id}/related`),
-  getReviews: (id, params) => api.get(`/products/${id}/reviews`, { params }),
+  getReviews: (id, params) => api.get(`/reviews/product/${id}`, { params }),
 };

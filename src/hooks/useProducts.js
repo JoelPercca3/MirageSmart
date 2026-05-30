@@ -38,6 +38,5 @@ export const useProductReviews = (id, params) =>
   useQuery({
     queryKey: ["reviews", id, params],
     queryFn: () => productAPI.getReviews(id, params),
-    select: (res) => res.data,
     enabled: !!id,
   });

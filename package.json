@@ -22,8 +22,10 @@
     "react-hook-form": "^7.75.0",
     "react-hot-toast": "^2.6.0",
     "react-loading-skeleton": "^3.5.0",
+    "react-medium-image-zoom": "^5.4.5",
     "react-router-dom": "^7.14.2",
     "swiper": "^12.1.4",
+    "ubigeo-peru": "^2.0.2",
     "zod": "^4.4.2",
     "zustand": "^5.0.12"
   },

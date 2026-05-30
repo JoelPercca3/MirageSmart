@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
-import { User, MapPin, Lock, Bell, Plus, Trash2, Star } from "lucide-react";
+import { User, MapPin, Lock, Bell, Plus, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { userAPI } from "../api/user.api.js";
@@ -9,6 +9,12 @@ import useAuthStore from "../store/useAuthStore.js";
 import Input from "../components/ui/Input.jsx";
 import Button from "../components/ui/Button.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
+import {
+  getDepartamentos,
+  getProvincias,
+  getDistritos,
+  UBICACIONES,
+} from "../data/ubicaciones.js";
 
 const TABS = [
   { id: "perfil", label: "Mi perfil", icon: User },
@@ -20,7 +26,6 @@ const TABS = [
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("perfil");
   const { user, updateUser } = useAuthStore();
-  const queryClient = useQueryClient();
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -30,11 +35,20 @@ export default function ProfilePage() {
         {/* Sidebar */}
         <aside className="sm:w-56 flex-shrink-0">
           <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            {/* Avatar */}
             <div className="flex flex-col items-center mb-6 pt-2">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-2xl font-bold text-red-500 mb-2">
-                {user?.nombre?.[0]?.toUpperCase()}
-              </div>
+              {/* Avatar - Foto de Google o iniciales */}
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.nombre}
+                  className="w-16 h-16 rounded-full object-cover mb-2"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center text-2xl font-bold text-red-500 mb-2">
+                  {user?.nombre?.[0]?.toUpperCase()}
+                </div>
+              )}
               <p className="font-semibold text-gray-800 text-sm text-center">
                 {user?.nombre}
               </p>
@@ -83,14 +97,20 @@ export default function ProfilePage() {
   );
 }
 
-// ── Tab Perfil ────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// TAB PERFIL
+// ─────────────────────────────────────────────────────────
+
 function PerfilTab({ user, updateUser }) {
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({
-    defaultValues: { nombre: user?.nombre, telefono: user?.telefono || "" },
+    defaultValues: {
+      nombre: user?.nombre,
+      telefono: user?.telefono || "",
+    },
   });
 
   const mutation = useMutation({
@@ -129,9 +149,22 @@ function PerfilTab({ user, updateUser }) {
   );
 }
 
-// ── Tab Direcciones ───────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// TAB DIRECCIONES - CORREGIDO
+// ─────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────
+// TAB DIRECCIONES - CORREGIDO
+// ─────────────────────────────────────────────────────────
+
 function DireccionesTab() {
   const [showForm, setShowForm] = useState(false);
+  const [provinciasList, setProvinciasList] = useState([]);
+  const [distritosList, setDistritosList] = useState([]);
+
+  // ✅ Usar la función importada correctamente
+  const departamentosList = getDepartamentos();
+
   const queryClient = useQueryClient();
 
   const { data: addresses, isLoading } = useQuery({
@@ -140,7 +173,42 @@ function DireccionesTab() {
     select: (res) => res.data,
   });
 
-  const { register, handleSubmit, reset } = useForm();
+  const { register, handleSubmit, reset, watch, setValue } = useForm({
+    defaultValues: {
+      nombre_destinatario: "",
+      telefono_contacto: "",
+      departamento: "",
+      provincia: "",
+      distrito: "",
+      calle: "",
+      codigo_postal: "",
+      referencia: "",
+      es_predeterminada: false,
+    },
+  });
+
+  const watchDepartamento = watch("departamento");
+  const watchProvincia = watch("provincia");
+
+  // ✅ Provincias - usando getProvincias
+  useEffect(() => {
+    if (watchDepartamento) {
+      const provincias = getProvincias(watchDepartamento);
+      setProvinciasList(provincias);
+      setValue("provincia", "");
+      setValue("distrito", "");
+      setDistritosList([]);
+    }
+  }, [watchDepartamento, setValue]);
+
+  // ✅ Distritos - usando getDistritos
+  useEffect(() => {
+    if (watchDepartamento && watchProvincia) {
+      const distritos = getDistritos(watchDepartamento, watchProvincia);
+      setDistritosList(distritos);
+      setValue("distrito", "");
+    }
+  }, [watchDepartamento, watchProvincia, setValue]);
 
   const addMutation = useMutation({
     mutationFn: userAPI.addAddress,
@@ -149,6 +217,8 @@ function DireccionesTab() {
       toast.success("Dirección agregada");
       setShowForm(false);
       reset();
+      setProvinciasList([]);
+      setDistritosList([]);
     },
     onError: (err) => toast.error(err.message || "Error al agregar dirección"),
   });
@@ -163,7 +233,9 @@ function DireccionesTab() {
 
   const setDefaultMutation = useMutation({
     mutationFn: userAPI.setDefaultAddress,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["addresses"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["addresses"] });
+    },
   });
 
   if (isLoading) return <Spinner />;
@@ -187,33 +259,121 @@ function DireccionesTab() {
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           onSubmit={handleSubmit((data) => addMutation.mutate(data))}
-          className="bg-gray-50 rounded-xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3"
+          className="bg-gray-50 rounded-xl p-4 mb-6"
         >
-          <Input
-            label="Nombre destinatario"
-            {...register("nombre_destinatario", { required: true })}
-          />
-          <Input label="Teléfono" {...register("telefono_contacto")} />
-          <Input
-            label="Dirección"
-            className="sm:col-span-2"
-            {...register("calle", { required: true })}
-          />
-          <Input label="Ciudad" {...register("ciudad", { required: true })} />
-          <Input
-            label="Departamento"
-            {...register("departamento", { required: true })}
-          />
-          <Input label="Código postal" {...register("codigo_postal")} />
-          <div className="sm:col-span-2 flex gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Nombre destinatario *"
+              {...register("nombre_destinatario", { required: true })}
+            />
+            <Input label="Teléfono" {...register("telefono_contacto")} />
+
+            {/* Departamento */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Departamento *
+              </label>
+              <select
+                {...register("departamento", { required: true })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-red-400 focus:outline-none"
+              >
+                <option value="">Selecciona un departamento</option>
+                {departamentosList &&
+                  departamentosList
+                    .filter((dep) => dep && dep !== "undefined")
+                    .map((dep, index) => (
+                      <option key={dep || `depto-${index}`} value={dep}>
+                        {dep}
+                      </option>
+                    ))}
+              </select>
+            </div>
+
+            {/* Provincia */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Provincia *
+              </label>
+              <select
+                {...register("provincia", { required: true })}
+                disabled={!watchDepartamento}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-red-400 focus:outline-none disabled:bg-gray-100"
+              >
+                <option value="">Selecciona una provincia</option>
+                {provinciasList &&
+                  provinciasList
+                    .filter((prov) => prov && prov !== "undefined")
+                    .map((prov, index) => (
+                      <option key={prov || `prov-${index}`} value={prov}>
+                        {prov}
+                      </option>
+                    ))}
+              </select>
+            </div>
+
+            {/* Distrito */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Distrito *
+              </label>
+              <select
+                {...register("distrito", { required: true })}
+                disabled={!watchProvincia}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-red-400 focus:outline-none disabled:bg-gray-100"
+              >
+                <option value="">Selecciona un distrito</option>
+                {distritosList &&
+                  distritosList
+                    .filter((dist) => dist && dist !== "undefined")
+                    .map((dist, index) => (
+                      <option key={dist || `dist-${index}`} value={dist}>
+                        {dist}
+                      </option>
+                    ))}
+              </select>
+            </div>
+
+            <Input
+              label="Dirección *"
+              className="sm:col-span-2"
+              placeholder="Ej: Av. Siempre Viva 123"
+              {...register("calle", { required: true })}
+            />
+
+            <Input label="Código postal" {...register("codigo_postal")} />
+            <Input
+              label="Referencia"
+              className="sm:col-span-2"
+              placeholder="Ej: Cerca al parque"
+              {...register("referencia")}
+            />
+          </div>
+
+          <div className="mt-4 flex items-center gap-2">
+            <input
+              type="checkbox"
+              {...register("es_predeterminada")}
+              className="w-4 h-4 text-red-500 rounded"
+            />
+            <span className="text-sm text-gray-600">
+              Guardar como dirección principal
+            </span>
+          </div>
+
+          <div className="flex gap-2 mt-4">
             <Button type="submit" size="sm" loading={addMutation.isPending}>
-              Guardar
+              Guardar dirección
             </Button>
             <Button
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                setShowForm(false);
+                reset();
+                setProvinciasList([]);
+                setDistritosList([]);
+              }}
             >
               Cancelar
             </Button>
@@ -221,7 +381,7 @@ function DireccionesTab() {
         </motion.form>
       )}
 
-      {/* Lista */}
+      {/* Lista de direcciones */}
       {addresses?.length === 0 ? (
         <p className="text-gray-500 text-sm text-center py-8">
           No tienes direcciones guardadas
@@ -233,8 +393,8 @@ function DireccionesTab() {
               key={addr.id}
               className="flex items-start justify-between p-4 border border-gray-100 rounded-xl"
             >
-              <div>
-                <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-semibold text-sm text-gray-800">
                     {addr.nombre_destinatario}
                   </p>
@@ -244,12 +404,12 @@ function DireccionesTab() {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-0.5">{addr.calle}</p>
+                <p className="text-sm text-gray-600 mt-1">{addr.calle}</p>
                 <p className="text-sm text-gray-500">
-                  {addr.ciudad}, {addr.departamento}
+                  {addr.distrito}, {addr.provincia}, {addr.departamento}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 ml-4">
                 {addr.es_predeterminada !== 1 && (
                   <button
                     onClick={() => setDefaultMutation.mutate(addr.id)}
@@ -260,7 +420,7 @@ function DireccionesTab() {
                 )}
                 <button
                   onClick={() => deleteMutation.mutate(addr.id)}
-                  className="p-1.5 hover:bg-red-50 rounded-lg transition"
+                  className="p-1.5 hover:bg-red-50 rounded-lg"
                 >
                   <Trash2
                     size={14}
@@ -275,8 +435,10 @@ function DireccionesTab() {
     </div>
   );
 }
+// ─────────────────────────────────────────────────────────
+// TAB CONTRASEÑA
+// ─────────────────────────────────────────────────────────
 
-// ── Tab Contraseña ────────────────────────────────────────
 function ContrasenaTab() {
   const {
     register,
@@ -324,7 +486,10 @@ function ContrasenaTab() {
   );
 }
 
-// ── Tab Notificaciones ────────────────────────────────────
+// ─────────────────────────────────────────────────────────
+// TAB NOTIFICACIONES
+// ─────────────────────────────────────────────────────────
+
 function NotificacionesTab() {
   const { data: notifications, isLoading } = useQuery({
     queryKey: ["notifications"],
@@ -333,6 +498,7 @@ function NotificacionesTab() {
   });
 
   const queryClient = useQueryClient();
+
   const markRead = useMutation({
     mutationFn: userAPI.markAsRead,
     onSuccess: () =>
@@ -363,12 +529,14 @@ function NotificacionesTab() {
             >
               <div className="flex items-start justify-between">
                 <p
-                  className={`text-sm font-medium ${notif.leido ? "text-gray-600" : "text-gray-800"}`}
+                  className={`text-sm font-medium ${
+                    notif.leido ? "text-gray-600" : "text-gray-800"
+                  }`}
                 >
                   {notif.titulo}
                 </p>
                 {!notif.leido && (
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 mt-1" />
+                  <div className="w-2 h-2 bg-red-500 rounded-full mt-1" />
                 )}
               </div>
               <p className="text-xs text-gray-400 mt-1">{notif.mensaje}</p>

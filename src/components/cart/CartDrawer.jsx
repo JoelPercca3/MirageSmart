@@ -36,13 +36,23 @@ export default function CartDrawer() {
             <div className="flex items-center justify-between p-4 border-b">
               <div className="flex items-center gap-2">
                 <ShoppingBag size={20} className="text-red-500" />
-                <h2 className="text-lg font-bold text-gray-800">Mi Carrito</h2>
+
+                {/* LINK AL CARRITO */}
+                <Link
+                  to="/cart"
+                  onClick={closeCart}
+                  className="text-lg font-bold text-gray-800 hover:text-red-500 transition-colors"
+                >
+                  Mi Carrito
+                </Link>
+
                 {items.length > 0 && (
                   <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                     {items.length}
                   </span>
                 )}
               </div>
+
               <button
                 onClick={closeCart}
                 className="p-2 hover:bg-gray-100 rounded-lg transition"
