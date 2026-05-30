@@ -278,9 +278,8 @@ export default function Navbar() {
       <motion.header
         animate={{ y: isNavbarVisible ? 0 : -200 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className={`bg-white transition-all duration-300 ${
-          scrolled && isNavbarVisible ? "shadow-lg" : "shadow-sm"
-        }`}
+        className={`bg-white transition-all duration-300 ${scrolled && isNavbarVisible ? "shadow-lg" : "shadow-sm"
+          }`}
         style={{ position: "sticky", top: 0, zIndex: 40 }}
       >
         {/* Navbar principal */}
@@ -315,7 +314,7 @@ export default function Navbar() {
                 />
               </button>
 
-              {/* Mega menú compacto */}
+              {/* Mega menú compacto con imágenes */}
               <AnimatePresence>
                 {showCompactCategories && categoriesWithSub.length > 0 && (
                   <motion.div
@@ -323,40 +322,48 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50"
+                    className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50"
                     onMouseEnter={handleCompactMegaMenuEnter}
                     onMouseLeave={handleCompactMegaMenuLeave}
                   >
                     <div className="max-h-96 overflow-y-auto">
                       {categoriesWithSub.map((cat) => (
-                        <div key={cat.id} className="group relative">
+                        <div key={cat.id} className="group">
                           <Link
                             to={`/category/${cat.id}`}
-                            className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors"
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors"
                             onClick={() => setShowCompactCategories(false)}
                           >
-                            <span className="text-sm text-gray-700">
-                              {cat.nombre}
-                            </span>
-                            {cat.subcategorias?.length > 0 && (
-                              <ChevronRight
-                                size={14}
-                                className="text-gray-400"
+                            {/* Imagen pequeña para categoría principal */}
+                            {cat.imagen_url && (
+                              <img
+                                src={cat.imagen_url}
+                                alt={cat.nombre}
+                                className="w-8 h-8 rounded-full object-cover"
                               />
+                            )}
+                            <span className="text-sm text-gray-700 flex-1">{cat.nombre}</span>
+                            {cat.subcategorias?.length > 0 && (
+                              <ChevronRight size={14} className="text-gray-400" />
                             )}
                           </Link>
                           {/* Subcategorías dentro del menú compacto */}
                           {cat.subcategorias?.length > 0 && (
-                            <div className="pl-4">
+                            <div className="pl-12 pr-4 pb-2">
                               {cat.subcategorias.slice(0, 5).map((sub) => (
                                 <Link
                                   key={sub.id}
                                   to={`/category/${sub.id}`}
-                                  className="block px-4 py-1.5 text-xs text-gray-500 hover:text-red-500 hover:bg-gray-50"
-                                  onClick={() =>
-                                    setShowCompactCategories(false)
-                                  }
+                                  className="flex items-center gap-2 py-1.5 text-xs text-gray-500 hover:text-red-500 hover:bg-gray-50 px-2 rounded"
+                                  onClick={() => setShowCompactCategories(false)}
                                 >
+                                  {sub.imagen_url && (
+                                    <img
+                                      src={sub.imagen_url}
+                                      alt={sub.nombre}
+                                      className="w-5 h-5 rounded-full object-cover"
+                                    />
+                                  )}
                                   {sub.nombre}
                                 </Link>
                               ))}
@@ -378,13 +385,12 @@ export default function Navbar() {
           >
             <form onSubmit={handleSearch} className="relative">
               <div
-                className={`flex border-1 rounded-xl overflow-hidden transition-all duration-300 ${
-                  isSearchActive
-                    ? "border-black"
-                    : showSearch
-                      ? "border-red-400"
-                      : "border-gray-200"
-                } ${isSearchActive ? "relative z-50 bg-white" : ""}`}
+                className={`flex border-1 rounded-xl overflow-hidden transition-all duration-300 ${isSearchActive
+                  ? "border-black"
+                  : showSearch
+                    ? "border-red-400"
+                    : "border-gray-200"
+                  } ${isSearchActive ? "relative z-50 bg-white" : ""}`}
               >
                 <input
                   type="text"
@@ -704,11 +710,10 @@ export default function Navbar() {
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5">
                 <Link
                   to="/products"
-                  className={`text-sm px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition ${
-                    location.pathname === "/products" && !location.search
-                      ? "bg-red-50 text-red-500"
-                      : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
-                  }`}
+                  className={`text-sm px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition ${location.pathname === "/products" && !location.search
+                    ? "bg-red-50 text-red-500"
+                    : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
+                    }`}
                   onMouseEnter={() => setActiveCategory(null)}
                 >
                   Todos
@@ -722,11 +727,10 @@ export default function Navbar() {
                   >
                     <Link
                       to={`/category/${cat.id}`}
-                      className={`text-sm px-3 py-1.5 rounded-lg whitespace-nowrap transition inline-flex items-center gap-1 ${
-                        location.pathname === `/category/${cat.id}`
-                          ? "bg-red-50 text-red-500 font-medium"
-                          : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
-                      }`}
+                      className={`text-sm px-3 py-1.5 rounded-lg whitespace-nowrap transition inline-flex items-center gap-1 ${location.pathname === `/category/${cat.id}`
+                        ? "bg-red-50 text-red-500 font-medium"
+                        : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
+                        }`}
                     >
                       {cat.nombre}
                       {cat.subcategorias?.length > 0 && (
@@ -737,8 +741,7 @@ export default function Navbar() {
                 ))}
               </div>
             </div>
-
-            {/* Mega Menú normal */}
+            {/* Mega Menú normal con imágenes */}
             <AnimatePresence>
               {activeCategory && activeCategory.subcategorias?.length > 0 && (
                 <motion.div
@@ -750,16 +753,34 @@ export default function Navbar() {
                   onMouseLeave={handleMegaMenuLeave}
                 >
                   <div className="max-w-7xl mx-auto px-4 py-6">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                       {activeCategory.subcategorias.map((sub) => (
-                        <div key={sub.id}>
-                          <Link
-                            to={`/category/${sub.id}`}
-                            className="font-semibold text-gray-800 hover:text-red-500 transition block mb-2 text-sm"
-                          >
+                        <Link
+                          key={sub.id}
+                          to={`/category/${sub.id}`}
+                          className="group flex flex-col items-center text-center hover:bg-gray-50 rounded-xl p-3 transition-all duration-200"
+                        >
+                          {/* Imagen redonda estilo Temu */}
+                          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-100 overflow-hidden mb-2 shadow-sm group-hover:shadow-md transition-shadow">
+                            {sub.imagen_url ? (
+                              <img
+                                src={sub.imagen_url}
+                                alt={sub.nombre}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          {/* Nombre de la subcategoría */}
+                          <span className="text-xs md:text-sm font-medium text-gray-700 group-hover:text-red-500 transition-colors line-clamp-2">
                             {sub.nombre}
-                          </Link>
-                        </div>
+                          </span>
+                        </Link>
                       ))}
                     </div>
                   </div>

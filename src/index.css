@@ -198,3 +198,37 @@ html {
   transition: opacity 0.5s;
   transform: translateZ(0);
 }
+/* Colores para botones de color */
+.bg-red,
+.bg-rojo {
+  background-color: #e53e3e;
+}
+.bg-blue,
+.bg-azul {
+  background-color: #3182ce;
+}
+.bg-black,
+.bg-negro {
+  background-color: #1a202c;
+}
+.bg-white,
+.bg-blanco {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+.bg-green,
+.bg-verde {
+  background-color: #38a169;
+}
+.bg-yellow,
+.bg-amarillo {
+  background-color: #ecc94b;
+}
+.bg-pink,
+.bg-rosa {
+  background-color: #ed64a6;
+}
+.bg-purple,
+.bg-morado {
+  background-color: #805ad5;
+}
