@@ -10,7 +10,7 @@ function isCached(src) {
   return img.complete && img.naturalWidth > 0;
 }
 
-const ZOOM_SCALE = 2.5;
+const ZOOM_SCALE = 2.0;
 
 const ProductZoom = ({ images, getImageUrl, productName }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -239,11 +239,10 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
                       e.stopPropagation();
                       goTo(i);
                     }}
-                    className={`w-12 h-12 rounded overflow-hidden border-2 transition ${
-                      i === selectedIndex
-                        ? "border-white"
-                        : "border-white/30 hover:border-white/60"
-                    }`}
+                    className={`w-12 h-12 rounded overflow-hidden border-2 transition ${i === selectedIndex
+                      ? "border-white"
+                      : "border-white/30 hover:border-white/60"
+                      }`}
                   >
                     <img
                       src={getImageUrl(img.url, "thumb")}
@@ -276,10 +275,9 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
                 onClick={() => goTo(i)}
                 className={`
                   flex-shrink-0 w-[60px] lg:w-[72px] relative overflow-hidden rounded border-2 transition-all duration-150
-                  ${
-                    i === selectedIndex
-                      ? "border-gray-900 shadow-sm"
-                      : "border-gray-200 hover:border-gray-400"
+                  ${i === selectedIndex
+                    ? "border-gray-900 shadow-sm"
+                    : "border-gray-200 hover:border-gray-400"
                   }
                 `}
                 style={{ aspectRatio: "3/4" }}
@@ -377,9 +375,8 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
               key={`main-${selectedIndex}`}
               src={largeUrl}
               alt={productName}
-              className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
-                isMediumLoaded ? "opacity-100" : "opacity-0"
-              }`}
+              className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${isMediumLoaded ? "opacity-100" : "opacity-0"
+                }`}
               onLoad={handleMediumLoad}
               onError={handleMediumError}
               draggable={false}

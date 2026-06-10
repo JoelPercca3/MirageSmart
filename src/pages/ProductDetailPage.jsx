@@ -156,14 +156,16 @@ export default function ProductDetailPage() {
       ? product.images
       : [{ url: PLACEHOLDER_IMAGE, es_principal: 1 }];
 
+  // 🔥 PRECIO CORREGIDO
   const precio = selectedVariant
-    ? Number(product.precio_base) + Number(selectedVariant.precio_extra || 0)
-    : Number(product.precio_final || product.precio_oferta || product.precio_base);
+    ? Number(product.precio_oferta || product.precio_base) +
+    Number(selectedVariant.precio_extra || 0)
+    : Number(product.precio_oferta || product.precio_base);
 
-  const precioBase = selectedVariant
-    ? Number(product.precio_base)
-    : Number(product.precio_base);
+  // Precio base para mostrar tachado
+  const precioBase = product.precio_base;
 
+  // Porcentaje de descuento
   const porcentajeDesc =
     product.precio_oferta && product.precio_base > product.precio_oferta
       ? product.porcentaje_desc
@@ -196,7 +198,7 @@ export default function ProductDetailPage() {
     addToCart.mutate(
       {
         product_id: product.id,
-        variant_id: hasVariants ? (selectedVariant?.id || null) : null,
+        variant_id: hasVariants ? selectedVariant?.id || null : null,
         cantidad: quantity,
       },
       {
@@ -204,7 +206,7 @@ export default function ProductDetailPage() {
           setAddedToCart(true);
           setTimeout(() => setAddedToCart(false), 2000);
         },
-      }
+      },
     );
   };
 
@@ -226,7 +228,10 @@ export default function ProductDetailPage() {
           >
             <Check size={18} className="text-green-400" />
             <span className="text-sm">Producto agregado al carrito</span>
-            <Link to="/cart" className="ml-4 text-sm text-white underline hover:no-underline">
+            <Link
+              to="/cart"
+              className="ml-4 text-sm text-white underline hover:no-underline"
+            >
               Ver carrito
             </Link>
           </motion.div>
@@ -235,7 +240,10 @@ export default function ProductDetailPage() {
 
       <div className="max-w-7xl mx-auto px-8 pt-2 pb-6 lg:pt-3 lg:pb-8">
         <div className="flex items-center gap-2 text-xs text-gray-400 mb-3 overflow-x-auto pb-1">
-          <Link to="/" className="hover:text-gray-600 transition whitespace-nowrap">
+          <Link
+            to="/"
+            className="hover:text-gray-600 transition whitespace-nowrap"
+          >
             Home
           </Link>
           <span className="text-gray-300">›</span>
@@ -256,7 +264,7 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-18">
-          <div className="lg:w-[62.5%]">
+          <div className="lg:w-[60.5%]">
             <div className="sticky top-4">
               <ProductZoom
                 images={images}
@@ -266,8 +274,8 @@ export default function ProductDetailPage() {
             </div>
           </div>
 
-          <div className="lg:w-[37.5%]">
-            <div className="flex items-center gap-1 mb-3">
+          <div className="lg:w-[35.5%]">
+            <div className="flex items-center gap-1 mb-5">
               <span className="text-xs text-gray-500">Vendido por</span>
               <span className="text-xs font-medium text-gray-800 uppercase bg-gray-100 px-1.5 py-0.5 rounded">
                 falabella
@@ -306,7 +314,8 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
                 <span className="text-xs text-gray-500">
-                  {Number(product.rating_promedio).toFixed(1)} ({product.rating_count} reseñas)
+                  {Number(product.rating_promedio).toFixed(1)} (
+                  {product.rating_count} reseñas)
                 </span>
                 <span className="text-gray-300">|</span>
                 <span className="text-xs text-gray-500">
@@ -315,6 +324,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
+            {/* PRECIO */}
             <div className="mb-5">
               {porcentajeDesc > 0 ? (
                 <>
@@ -339,7 +349,6 @@ export default function ProductDetailPage() {
                 </span>
               )}
             </div>
-
             {/* VARIANTES */}
             {product.variants?.length > 0 && (
               <div className="space-y-4 mb-5">
@@ -347,30 +356,46 @@ export default function ProductDetailPage() {
                 {(() => {
                   const tallas = [
                     ...new Set(
-                      product.variants.map((v) => {
-                        const opts = typeof v.opciones === "string" ? JSON.parse(v.opciones) : v.opciones;
-                        return opts.Talla;
-                      }).filter(Boolean)
+                      product.variants
+                        .map((v) => {
+                          const opts =
+                            typeof v.opciones === "string"
+                              ? JSON.parse(v.opciones)
+                              : v.opciones;
+                          return opts.Talla;
+                        })
+                        .filter(Boolean),
                     ),
                   ];
                   if (tallas.length === 0) return null;
                   return (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-700">Talla</p>
+                        <p className="text-sm font-medium text-gray-700">
+                          Talla
+                        </p>
                         <button className="text-xs text-red-500 hover:text-red-600 font-medium">
                           Guía de tallas
                         </button>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {tallas.map((talla) => {
-                          const variantsWithTalla = product.variants.filter((v) => {
-                            const opts = typeof v.opciones === "string" ? JSON.parse(v.opciones) : v.opciones;
-                            return opts.Talla === talla;
-                          });
-                          const hasStock = variantsWithTalla.some((v) => v.stock > 0);
+                          const variantsWithTalla = product.variants.filter(
+                            (v) => {
+                              const opts =
+                                typeof v.opciones === "string"
+                                  ? JSON.parse(v.opciones)
+                                  : v.opciones;
+                              return opts.Talla === talla;
+                            },
+                          );
+                          const hasStock = variantsWithTalla.some(
+                            (v) => v.stock > 0,
+                          );
                           const selectedOpts = selectedVariant?.opciones
-                            ? (typeof selectedVariant.opciones === "string" ? JSON.parse(selectedVariant.opciones) : selectedVariant.opciones)
+                            ? typeof selectedVariant.opciones === "string"
+                              ? JSON.parse(selectedVariant.opciones)
+                              : selectedVariant.opciones
                             : null;
                           const isSelected = selectedOpts?.Talla === talla;
                           return (
@@ -380,15 +405,26 @@ export default function ProductDetailPage() {
                               onClick={() => {
                                 let variantToSelect;
                                 if (selectedOpts?.Color) {
-                                  variantToSelect = variantsWithTalla.find((v) => {
-                                    const opts = typeof v.opciones === "string" ? JSON.parse(v.opciones) : v.opciones;
-                                    return opts.Color === selectedOpts.Color && v.stock > 0;
-                                  });
+                                  variantToSelect = variantsWithTalla.find(
+                                    (v) => {
+                                      const opts =
+                                        typeof v.opciones === "string"
+                                          ? JSON.parse(v.opciones)
+                                          : v.opciones;
+                                      return (
+                                        opts.Color === selectedOpts.Color &&
+                                        v.stock > 0
+                                      );
+                                    },
+                                  );
                                 }
                                 if (!variantToSelect) {
-                                  variantToSelect = variantsWithTalla.find((v) => v.stock > 0);
+                                  variantToSelect = variantsWithTalla.find(
+                                    (v) => v.stock > 0,
+                                  );
                                 }
-                                if (variantToSelect) setSelectedVariant(variantToSelect);
+                                if (variantToSelect)
+                                  setSelectedVariant(variantToSelect);
                               }}
                               className={`
                                 min-w-[48px] px-4 py-2 text-sm border-2 rounded-md transition-all duration-150 font-medium
@@ -412,21 +448,30 @@ export default function ProductDetailPage() {
                 {(() => {
                   const colores = [
                     ...new Set(
-                      product.variants.map((v) => {
-                        const opts = typeof v.opciones === "string" ? JSON.parse(v.opciones) : v.opciones;
-                        return opts.Color;
-                      }).filter(Boolean)
+                      product.variants
+                        .map((v) => {
+                          const opts =
+                            typeof v.opciones === "string"
+                              ? JSON.parse(v.opciones)
+                              : v.opciones;
+                          return opts.Color;
+                        })
+                        .filter(Boolean),
                     ),
                   ];
                   if (colores.length === 0) return null;
                   return (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium text-gray-700">Color</p>
+                        <p className="text-sm font-medium text-gray-700">
+                          Color
+                        </p>
                         <span className="text-xs text-gray-500">
                           {(() => {
                             const opts = selectedVariant?.opciones
-                              ? (typeof selectedVariant.opciones === "string" ? JSON.parse(selectedVariant.opciones) : selectedVariant.opciones)
+                              ? typeof selectedVariant.opciones === "string"
+                                ? JSON.parse(selectedVariant.opciones)
+                                : selectedVariant.opciones
                               : null;
                             return opts?.Color || "";
                           })()}
@@ -434,21 +479,35 @@ export default function ProductDetailPage() {
                       </div>
                       <div className="flex flex-wrap gap-3">
                         {colores.map((color) => {
-                          const variantsWithColor = product.variants.filter((v) => {
-                            const opts = typeof v.opciones === "string" ? JSON.parse(v.opciones) : v.opciones;
-                            return opts.Color === color;
-                          });
+                          const variantsWithColor = product.variants.filter(
+                            (v) => {
+                              const opts =
+                                typeof v.opciones === "string"
+                                  ? JSON.parse(v.opciones)
+                                  : v.opciones;
+                              return opts.Color === color;
+                            },
+                          );
                           const selectedOpts = selectedVariant?.opciones
-                            ? (typeof selectedVariant.opciones === "string" ? JSON.parse(selectedVariant.opciones) : selectedVariant.opciones)
+                            ? typeof selectedVariant.opciones === "string"
+                              ? JSON.parse(selectedVariant.opciones)
+                              : selectedVariant.opciones
                             : null;
                           let hasStock = false;
                           if (selectedOpts?.Talla) {
                             hasStock = variantsWithColor.some((v) => {
-                              const opts = typeof v.opciones === "string" ? JSON.parse(v.opciones) : v.opciones;
-                              return opts.Talla === selectedOpts.Talla && v.stock > 0;
+                              const opts =
+                                typeof v.opciones === "string"
+                                  ? JSON.parse(v.opciones)
+                                  : v.opciones;
+                              return (
+                                opts.Talla === selectedOpts.Talla && v.stock > 0
+                              );
                             });
                           } else {
-                            hasStock = variantsWithColor.some((v) => v.stock > 0);
+                            hasStock = variantsWithColor.some(
+                              (v) => v.stock > 0,
+                            );
                           }
                           const isSelected = selectedOpts?.Color === color;
                           const colorNameLower = color?.toLowerCase() || "";
@@ -459,18 +518,35 @@ export default function ProductDetailPage() {
                               onClick={() => {
                                 let variantToSelect;
                                 if (selectedOpts?.Talla) {
-                                  variantToSelect = product.variants.find((v) => {
-                                    const opts = typeof v.opciones === "string" ? JSON.parse(v.opciones) : v.opciones;
-                                    return opts.Color === color && opts.Talla === selectedOpts.Talla && v.stock > 0;
-                                  });
+                                  variantToSelect = product.variants.find(
+                                    (v) => {
+                                      const opts =
+                                        typeof v.opciones === "string"
+                                          ? JSON.parse(v.opciones)
+                                          : v.opciones;
+                                      return (
+                                        opts.Color === color &&
+                                        opts.Talla === selectedOpts.Talla &&
+                                        v.stock > 0
+                                      );
+                                    },
+                                  );
                                 }
                                 if (!variantToSelect) {
-                                  variantToSelect = product.variants.find((v) => {
-                                    const opts = typeof v.opciones === "string" ? JSON.parse(v.opciones) : v.opciones;
-                                    return opts.Color === color && v.stock > 0;
-                                  });
+                                  variantToSelect = product.variants.find(
+                                    (v) => {
+                                      const opts =
+                                        typeof v.opciones === "string"
+                                          ? JSON.parse(v.opciones)
+                                          : v.opciones;
+                                      return (
+                                        opts.Color === color && v.stock > 0
+                                      );
+                                    },
+                                  );
                                 }
-                                if (variantToSelect) setSelectedVariant(variantToSelect);
+                                if (variantToSelect)
+                                  setSelectedVariant(variantToSelect);
                               }}
                               className={`
                                 flex items-center gap-2 px-3 py-2 text-sm border-2 rounded-md transition-all duration-150
@@ -485,23 +561,47 @@ export default function ProductDetailPage() {
                                 className={`w-5 h-5 rounded-full border ${isSelected ? "ring-2 ring-gray-800 ring-offset-1" : "border-gray-300"}`}
                                 style={{
                                   backgroundColor:
-                                    colorNameLower === "rojo" ? "#e53e3e" :
-                                      colorNameLower === "azul" ? "#3182ce" :
-                                        colorNameLower === "negro" ? "#1a202c" :
-                                          colorNameLower === "blanco" ? "#ffffff" :
-                                            colorNameLower === "verde" ? "#38a169" :
-                                              colorNameLower === "amarillo" ? "#ecc94b" :
-                                                colorNameLower === "rosa" ? "#ed64a6" :
-                                                  colorNameLower === "morado" ? "#805ad5" :
-                                                    "#cccccc"
+                                    colorNameLower === "rojo"
+                                      ? "#e53e3e"
+                                      : colorNameLower === "azul"
+                                        ? "#3182ce"
+                                        : colorNameLower === "negro"
+                                          ? "#1a202c"
+                                          : colorNameLower === "blanco"
+                                            ? "#ffffff"
+                                            : colorNameLower === "verde"
+                                              ? "#38a169"
+                                              : colorNameLower === "amarillo"
+                                                ? "#ecc94b"
+                                                : colorNameLower === "rosa"
+                                                  ? "#ed64a6"
+                                                  : colorNameLower === "morado"
+                                                    ? "#805ad5"
+                                                    : "#cccccc",
                                 }}
                               />
-                              <span className={isSelected ? "font-medium text-gray-900" : "text-gray-700"}>
+                              <span
+                                className={
+                                  isSelected
+                                    ? "font-medium text-gray-900"
+                                    : "text-gray-700"
+                                }
+                              >
                                 {color}
                               </span>
                               {isSelected && (
-                                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                <svg
+                                  className="w-4 h-4 text-green-500"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
                                 </svg>
                               )}
                             </button>
@@ -529,17 +629,21 @@ export default function ProductDetailPage() {
                 </span>
                 <button
                   onClick={() =>
-                    setQuantity(Math.min(
-                      product.variants?.length > 0
-                        ? (selectedVariant?.stock || product.stock_total || 99)
-                        : (product.stock_total || 99),
-                      quantity + 1
-                    ))
+                    setQuantity(
+                      Math.min(
+                        product.variants?.length > 0
+                          ? selectedVariant?.stock || product.stock_total || 99
+                          : product.stock_total || 99,
+                        quantity + 1,
+                      ),
+                    )
                   }
-                  disabled={quantity >= (product.variants?.length > 0
-                    ? (selectedVariant?.stock || product.stock_total || 99)
-                    : (product.stock_total || 99)
-                  )}
+                  disabled={
+                    quantity >=
+                    (product.variants?.length > 0
+                      ? selectedVariant?.stock || product.stock_total || 99
+                      : product.stock_total || 99)
+                  }
                   className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus size={14} />
@@ -549,7 +653,11 @@ export default function ProductDetailPage() {
                 className="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-medium"
                 onClick={handleAddToCart}
                 loading={addToCart.isPending}
-                disabled={(product.variants?.length > 0 && !selectedVariant) || selectedVariant?.stock === 0 || product.stock_total === 0}
+                disabled={
+                  (product.variants?.length > 0 && !selectedVariant) ||
+                  selectedVariant?.stock === 0 ||
+                  product.stock_total === 0
+                }
               >
                 <ShoppingCart size={16} className="mr-2" />
                 {product.variants?.length > 0 && !selectedVariant
@@ -565,7 +673,9 @@ export default function ProductDetailPage() {
               >
                 <Heart
                   size={18}
-                  className={wishlisted ? "fill-red-500 text-red-500" : "text-gray-500"}
+                  className={
+                    wishlisted ? "fill-red-500 text-red-500" : "text-gray-500"
+                  }
                 />
               </button>
             </div>
@@ -573,14 +683,28 @@ export default function ProductDetailPage() {
             {/* GARANTÍAS */}
             <div className="grid grid-cols-3 gap-3 py-4 border-t border-b border-gray-100 mb-5">
               {[
-                { icon: Truck, text: "Despacho a domicilio", tooltip: "Entrega en 3-5 días hábiles" },
-                { icon: Shield, text: "Compra 100% segura", tooltip: "Tus datos están protegidos" },
-                { icon: RotateCcw, text: "30 días", tooltip: "Cambios y devoluciones gratuitas" },
+                {
+                  icon: Truck,
+                  text: "Despacho a domicilio",
+                  tooltip: "Entrega en 3-5 días hábiles",
+                },
+                {
+                  icon: Shield,
+                  text: "Compra 100% segura",
+                  tooltip: "Tus datos están protegidos",
+                },
+                {
+                  icon: RotateCcw,
+                  text: "30 días",
+                  tooltip: "Cambios y devoluciones gratuitas",
+                },
               ].map(({ icon: Icon, text, tooltip }) => (
                 <Tooltip key={text} content={tooltip}>
                   <div className="flex flex-col items-center gap-1 cursor-help">
                     <Icon size={18} className="text-gray-500" />
-                    <span className="text-xs text-gray-500 text-center">{text}</span>
+                    <span className="text-xs text-gray-500 text-center">
+                      {text}
+                    </span>
                   </div>
                 </Tooltip>
               ))}
@@ -600,7 +724,9 @@ export default function ProductDetailPage() {
                 <div className="space-y-1.5">
                   {product.atributos.slice(0, 4).map((attr, i) => (
                     <div key={i} className="flex text-sm">
-                      <span className="text-gray-500 w-28 capitalize">{attr.atributo}:</span>
+                      <span className="text-gray-500 w-28 capitalize">
+                        {attr.atributo}:
+                      </span>
                       <span className="text-gray-700">{attr.valor}</span>
                     </div>
                   ))}
@@ -641,34 +767,55 @@ export default function ProductDetailPage() {
             <div className="pt-6">
               {activeTab === "descripcion" && (
                 <div className="prose max-w-none text-gray-600 text-sm leading-relaxed">
-                  {product.descripcion || <p className="text-gray-400">No hay descripción disponible.</p>}
+                  {product.descripcion || (
+                    <p className="text-gray-400">
+                      No hay descripción disponible.
+                    </p>
+                  )}
                 </div>
               )}
-              {activeTab === "especificaciones" && product.atributos?.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {product.atributos.map((attr, i) => (
-                    <div key={i} className="flex text-sm py-2 border-b border-gray-50">
-                      <span className="text-gray-500 w-32 capitalize">{attr.atributo}:</span>
-                      <span className="text-gray-700">{attr.valor}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {activeTab === "especificaciones" &&
+                product.atributos?.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {product.atributos.map((attr, i) => (
+                      <div
+                        key={i}
+                        className="flex text-sm py-2 border-b border-gray-50"
+                      >
+                        <span className="text-gray-500 w-32 capitalize">
+                          {attr.atributo}:
+                        </span>
+                        <span className="text-gray-700">{attr.valor}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               {activeTab === "politicas" && (
                 <div className="text-gray-600 text-sm space-y-3">
                   <p className="flex items-start gap-2">
                     <span className="text-green-600">✔</span>
-                    <span>30 días para cambios y devoluciones desde la fecha de recepción.</span>
+                    <span>
+                      30 días para cambios y devoluciones desde la fecha de
+                      recepción.
+                    </span>
                   </p>
                   <p className="flex items-start gap-2">
                     <span className="text-green-600">✔</span>
-                    <span>Producto nuevo, 100% original con garantía de fábrica.</span>
+                    <span>
+                      Producto nuevo, 100% original con garantía de fábrica.
+                    </span>
                   </p>
                   <p className="flex items-start gap-2">
                     <span className="text-green-600">✔</span>
-                    <span>Para cambios o devoluciones, el producto debe estar en su empaque original.</span>
+                    <span>
+                      Para cambios o devoluciones, el producto debe estar en su
+                      empaque original.
+                    </span>
                   </p>
-                  <Link to="/reembolsos" className="text-gray-800 hover:text-gray-600 text-sm font-medium inline-flex items-center gap-1 mt-4">
+                  <Link
+                    to="/reembolsos"
+                    className="text-gray-800 hover:text-gray-600 text-sm font-medium inline-flex items-center gap-1 mt-4"
+                  >
                     Ver política completa →
                   </Link>
                 </div>
@@ -685,7 +832,9 @@ export default function ProductDetailPage() {
                 <div className="space-y-2">
                   {product.atributos.map((attr, i) => (
                     <div key={i} className="flex text-sm py-1">
-                      <span className="text-gray-500 w-32 capitalize">{attr.atributo}:</span>
+                      <span className="text-gray-500 w-32 capitalize">
+                        {attr.atributo}:
+                      </span>
                       <span className="text-gray-700">{attr.valor}</span>
                     </div>
                   ))}
@@ -694,10 +843,19 @@ export default function ProductDetailPage() {
             )}
             <Accordion title="Satisfacción garantizada">
               <div className="space-y-2">
-                <p>✔ 30 días para cambios y devoluciones desde la fecha de recepción.</p>
+                <p>
+                  ✔ 30 días para cambios y devoluciones desde la fecha de
+                  recepción.
+                </p>
                 <p>✔ Producto nuevo, 100% original con garantía de fábrica.</p>
-                <p>✔ Para cambios o devoluciones, el producto debe estar en su empaque original.</p>
-                <Link to="/reembolsos" className="text-gray-800 hover:text-gray-600 text-sm font-medium inline-flex items-center gap-1 mt-2">
+                <p>
+                  ✔ Para cambios o devoluciones, el producto debe estar en su
+                  empaque original.
+                </p>
+                <Link
+                  to="/reembolsos"
+                  className="text-gray-800 hover:text-gray-600 text-sm font-medium inline-flex items-center gap-1 mt-2"
+                >
                   Ver política completa →
                 </Link>
               </div>
@@ -708,7 +866,9 @@ export default function ProductDetailPage() {
         {/* RESEÑAS */}
         {reviewsData?.data?.length > 0 && (
           <div className="mt-12 pt-6 border-t border-gray-100">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">Opiniones de clientes</h3>
+            <h3 className="text-lg font-medium text-gray-800 mb-4">
+              Opiniones de clientes
+            </h3>
             <div className="space-y-5">
               {reviewsData.data.slice(0, 3).map((rev) => (
                 <div key={rev.id} className="pb-4 border-b border-gray-100">
@@ -717,21 +877,37 @@ export default function ProductDetailPage() {
                       {rev.autor?.[0]?.toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-800">{rev.autor}</p>
-                      <p className="text-xs text-gray-400">{timeAgo(rev.created_at)}</p>
+                      <p className="text-sm font-medium text-gray-800">
+                        {rev.autor}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {timeAgo(rev.created_at)}
+                      </p>
                     </div>
                     <div className="ml-auto flex gap-0.5">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
                           size={12}
-                          className={i < rev.calificacion ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+                          className={
+                            i < rev.calificacion
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
+                          }
                         />
                       ))}
                     </div>
                   </div>
-                  {rev.titulo && <p className="text-sm font-medium text-gray-700 mb-1">{rev.titulo}</p>}
-                  {rev.comentario && <p className="text-sm text-gray-600 leading-relaxed">{rev.comentario}</p>}
+                  {rev.titulo && (
+                    <p className="text-sm font-medium text-gray-700 mb-1">
+                      {rev.titulo}
+                    </p>
+                  )}
+                  {rev.comentario && (
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {rev.comentario}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -751,17 +927,60 @@ export default function ProductDetailPage() {
           <div className="mt-12 pt-6 border-t border-gray-100">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-6 h-6 flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" clipRule="evenodd" d="M17.5 12.7083C17.8452 12.7083 18.125 12.9882 18.125 13.3333V15C18.125 16.7259 16.7259 18.125 15 18.125H13.3333C12.9882 18.125 12.7083 17.8452 12.7083 17.5C12.7083 17.1548 12.9882 16.875 13.3333 16.875H15C16.0355 16.875 16.875 16.0355 16.875 15V13.3333C16.875 12.9882 17.1548 12.7083 17.5 12.7083Z" fill="#333333" />
-                  <path fillRule="evenodd" clipRule="evenodd" d="M12.7083 2.5C12.7083 2.15482 12.9882 1.875 13.3333 1.875H15C16.7259 1.875 18.125 3.27411 18.125 5V6.66667C18.125 7.01184 17.8452 7.29167 17.5 7.29167C17.1548 7.29167 16.875 7.01184 16.875 6.66667V5C16.875 3.96447 16.0355 3.125 15 3.125H13.3333C12.9882 3.125 12.7083 2.84518 12.7083 2.5Z" fill="#333333" />
-                  <path fillRule="evenodd" clipRule="evenodd" d="M2.5 12.7083C2.84518 12.7083 3.125 12.9882 3.125 13.3333V15C3.125 16.0355 3.96447 16.875 5 16.875H6.66667C7.01184 16.875 7.29167 17.1548 7.29167 17.5C7.29167 17.8452 7.01184 18.125 6.66667 18.125H5C3.27411 18.125 1.875 16.7259 1.875 15V13.3333C1.875 12.9882 2.15482 12.7083 2.5 12.7083Z" fill="#333333" />
-                  <path fillRule="evenodd" clipRule="evenodd" d="M5 3.125C3.96447 3.125 3.125 3.96447 3.125 5V6.66667C3.125 7.01184 2.84518 7.29167 2.5 7.29167C2.15482 7.29167 1.875 7.01184 1.875 6.66667V5C1.875 3.27411 3.27411 1.875 5 1.875H6.66667C7.01184 1.875 7.29167 2.15482 7.29167 2.5C7.29167 2.84518 7.01184 3.125 6.66667 3.125H5Z" fill="#333333" />
-                  <path fillRule="evenodd" clipRule="evenodd" d="M8.12499 13.3333C8.12499 12.9882 8.40481 12.7083 8.74999 12.7083H11.25C11.5952 12.7083 11.875 12.9882 11.875 13.3333C11.875 13.6785 11.5952 13.9583 11.25 13.9583H8.74999C8.40481 13.9583 8.12499 13.6785 8.12499 13.3333Z" fill="#333333" />
-                  <path fillRule="evenodd" clipRule="evenodd" d="M8.61111 6.04167C8.95629 6.04167 9.23611 6.32149 9.23611 6.66667V10.8333C9.23611 11.1785 8.95629 11.4583 8.61111 11.4583C8.26593 11.4583 7.98611 11.1785 7.98611 10.8333V6.66667C7.98611 6.32149 8.26593 6.04167 8.61111 6.04167Z" fill="#333333" />
-                  <path fillRule="evenodd" clipRule="evenodd" d="M11.3889 6.04167C11.7341 6.04167 12.0139 6.32149 12.0139 6.66667V10.8333C12.0139 11.1785 11.7341 11.4583 11.3889 11.4583C11.0437 11.4583 10.7639 11.1785 10.7639 10.8333V6.66667C10.7639 6.32149 11.0437 6.04167 11.3889 6.04167Z" fill="#333333" />
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M17.5 12.7083C17.8452 12.7083 18.125 12.9882 18.125 13.3333V15C18.125 16.7259 16.7259 18.125 15 18.125H13.3333C12.9882 18.125 12.7083 17.8452 12.7083 17.5C12.7083 17.1548 12.9882 16.875 13.3333 16.875H15C16.0355 16.875 16.875 16.0355 16.875 15V13.3333C16.875 12.9882 17.1548 12.7083 17.5 12.7083Z"
+                    fill="#333333"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M12.7083 2.5C12.7083 2.15482 12.9882 1.875 13.3333 1.875H15C16.7259 1.875 18.125 3.27411 18.125 5V6.66667C18.125 7.01184 17.8452 7.29167 17.5 7.29167C17.1548 7.29167 16.875 7.01184 16.875 6.66667V5C16.875 3.96447 16.0355 3.125 15 3.125H13.3333C12.9882 3.125 12.7083 2.84518 12.7083 2.5Z"
+                    fill="#333333"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M2.5 12.7083C2.84518 12.7083 3.125 12.9882 3.125 13.3333V15C3.125 16.0355 3.96447 16.875 5 16.875H6.66667C7.01184 16.875 7.29167 17.1548 7.29167 17.5C7.29167 17.8452 7.01184 18.125 6.66667 18.125H5C3.27411 18.125 1.875 16.7259 1.875 15V13.3333C1.875 12.9882 2.15482 12.7083 2.5 12.7083Z"
+                    fill="#333333"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M5 3.125C3.96447 3.125 3.125 3.96447 3.125 5V6.66667C3.125 7.01184 2.84518 7.29167 2.5 7.29167C2.15482 7.29167 1.875 7.01184 1.875 6.66667V5C1.875 3.27411 3.27411 1.875 5 1.875H6.66667C7.01184 1.875 7.29167 2.15482 7.29167 2.5C7.29167 2.84518 7.01184 3.125 6.66667 3.125H5Z"
+                    fill="#333333"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M8.12499 13.3333C8.12499 12.9882 8.40481 12.7083 8.74999 12.7083H11.25C11.5952 12.7083 11.875 12.9882 11.875 13.3333C11.875 13.6785 11.5952 13.9583 11.25 13.9583H8.74999C8.40481 13.9583 8.12499 13.6785 8.12499 13.3333Z"
+                    fill="#333333"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M8.61111 6.04167C8.95629 6.04167 9.23611 6.32149 9.23611 6.66667V10.8333C9.23611 11.1785 8.95629 11.4583 8.61111 11.4583C8.26593 11.4583 7.98611 11.1785 7.98611 10.8333V6.66667C7.98611 6.32149 8.26593 6.04167 8.61111 6.04167Z"
+                    fill="#333333"
+                  />
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M11.3889 6.04167C11.7341 6.04167 12.0139 6.32149 12.0139 6.66667V10.8333C12.0139 11.1785 11.7341 11.4583 11.3889 11.4583C11.0437 11.4583 10.7639 11.1785 10.7639 10.8333V6.66667C10.7639 6.32149 11.0437 6.04167 11.3889 6.04167Z"
+                    fill="#333333"
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-800">Comprados juntos frecuentemente</h3>
+              <h3 className="text-lg font-medium text-gray-800">
+                Comprados juntos frecuentemente
+              </h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {related.slice(0, 5).map((product) => (

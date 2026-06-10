@@ -57,7 +57,7 @@ export default function ProductCard({ product }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -6, transition: { duration: 0.2 } }}
-      className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100"
+      className="group bg-white rounded-none overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -69,25 +69,25 @@ export default function ProductCard({ product }) {
         >
           {!imageLoaded && <div className="absolute inset-0 shimmer" />}
 
-          {/* Imagen principal */}
+          {/* Imagen primaria — estática, nunca cambia */}
           <img
             src={getImageUrl(primaryImage)}
             alt={product.nombre}
             onLoad={() => setImageLoaded(true)}
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 z-10
-              ${imageLoaded ? "opacity-100" : "opacity-0"}
-              ${isHovered && secondaryImage ? "opacity-0" : "opacity-100"}
-            `}
+            className={`absolute inset-0 w-full h-full object-cover z-10
+    transition-opacity duration-300
+    ${imageLoaded ? "opacity-100" : "opacity-0"}
+  `}
           />
 
-          {/* Imagen secundaria */}
+          {/* Imagen secundaria — usa tus clases CSS globales igual que Shein */}
           {secondaryImage && (
             <img
               src={getImageUrl(secondaryImage)}
               alt={product.nombre}
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 z-20
-                ${isHovered ? "opacity-100" : "opacity-0"}
-              `}
+              className={`absolute inset-0 w-full h-full object-cover z-20
+      ${isHovered ? "image-fade-in" : "image-fade-out"}
+    `}
             />
           )}
 
@@ -110,7 +110,7 @@ export default function ProductCard({ product }) {
               whileTap={{ scale: 0.9 }}
               onClick={handleAddToCart}
               disabled={addToCart.isPending}
-              className="flex-1 bg-white text-gray-800 text-xs font-bold py-2 rounded-xl shadow-lg hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 bg-white text-gray-800 text-xs font-bold py-2 rounded-xl shadow-lg hover:bg-red-500 hover:text-red-500 cursor-pointer transition-colors flex items-center justify-center gap-1.5"
             >
               <ShoppingCart size={13} />
               {addToCart.isPending ? "Agregando..." : "Agregar"}
@@ -119,7 +119,7 @@ export default function ProductCard({ product }) {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleViewProduct}
-              className="bg-white/90 text-gray-700 p-2 rounded-xl shadow-lg hover:bg-gray-100 transition flex items-center justify-center"
+              className="bg-white/90 text-gray-700 p-2 rounded-xl  shadow-lg hover:bg-gray-100 transition flex items-center justify-center"
             >
               <Eye size={14} />
             </motion.button>
@@ -129,11 +129,10 @@ export default function ProductCard({ product }) {
           <motion.button
             whileTap={{ scale: 0.75 }}
             onClick={handleWishlist}
-            className={`absolute top-2 right-2 p-1.5 rounded-full shadow transition-all z-30 ${
-              wishlisted
-                ? "bg-red-500 text-white"
-                : "bg-white/90 text-gray-400 hover:bg-red-50 hover:text-red-500"
-            }`}
+            className={`absolute top-2 right-2 p-1.5 rounded-full shadow transition-all z-30 ${wishlisted
+              ? "bg-red-500 text-white"
+              : "bg-white/90 text-gray-400 hover:bg-red-50 hover:text-red-500"
+              }`}
           >
             <Heart size={14} className={wishlisted ? "fill-white" : ""} />
           </motion.button>
@@ -175,8 +174,8 @@ export default function ProductCard({ product }) {
             <span className="text-red-500 font-extrabold text-base">
               {formatPrice(
                 product.precio_final ||
-                  product.precio_oferta ||
-                  product.precio_base,
+                product.precio_oferta ||
+                product.precio_base,
               )}
             </span>
             {product.precio_oferta &&

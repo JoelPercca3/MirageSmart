@@ -189,14 +189,14 @@ html {
 
 .image-fade-in {
   opacity: 1;
-  transition: opacity 0.5s;
-  transform: translateZ(0);
+  transition: opacity 0.5s ease;
+  transition-delay: 0.3s; /* espera 300ms antes de empezar a aparecer */
 }
 
 .image-fade-out {
   opacity: 0;
-  transition: opacity 0.5s;
-  transform: translateZ(0);
+  transition: opacity 0.3s ease;
+  transition-delay: 0s; /* la salida es inmediata, sin espera */
 }
 /* Colores para botones de color */
 .bg-red,

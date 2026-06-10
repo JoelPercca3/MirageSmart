@@ -173,9 +173,8 @@ function HeroBanner() {
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`rounded-full transition-all ${
-              i === current ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/50"
-            }`}
+            className={`rounded-full transition-all ${i === current ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/50"
+              }`}
           />
         ))}
       </div>
@@ -209,7 +208,7 @@ function FlashSale({ products }) {
       viewport={{ once: true }}
       className="my-5"
     >
-      <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl p-4 sm:p-5">
+      <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-none p-4 sm:p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-xl">

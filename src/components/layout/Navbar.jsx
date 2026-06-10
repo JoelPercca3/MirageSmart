@@ -12,7 +12,6 @@ import {
   Package,
   LogOut,
   ChevronRight,
-  Grid3x3,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import useAuthStore from "../../store/useAuthStore.js";
@@ -52,30 +51,22 @@ export default function Navbar() {
   const logout = useLogout();
   const navigate = useNavigate();
 
-  // 👈 Efecto para ocultar navbar al hacer scroll (funciona en home y product detail)
+  // Efecto para ocultar navbar al hacer scroll
   useEffect(() => {
-    const isProductPage = location.pathname.includes("/products/");
-
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-      // En ambas páginas (home y product detail): ocultar al bajar, mostrar al subir
       if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        // Scroll hacia abajo y no está en la parte superior
         setIsNavbarVisible(false);
       } else if (currentScrollY < lastScrollY || currentScrollY < 50) {
-        // Scroll hacia arriba o en la parte superior
         setIsNavbarVisible(true);
       }
-
       setLastScrollY(currentScrollY);
     };
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  // 👈 Efecto para compact mode en product detail
+  // Efecto para compact mode en product detail
   useEffect(() => {
     const isProductPage = location.pathname.includes("/products/");
     setIsCompact(isProductPage);
@@ -96,14 +87,21 @@ export default function Navbar() {
       const categoriesWithChildren = mainCategories.map((mainCat) => ({
         ...mainCat,
         subcategorias: rawCategories.filter(
-          (sub) => sub.parent_id === mainCat.id,
+          (sub) => sub.parent_id === mainCat.id
         ),
       }));
       setCategoriesWithSub(categoriesWithChildren.slice(0, 7));
     }
   }, [rawCategories]);
 
-  // Timer para cerrar el menú de categorías con delay
+  // ─── Helpers para cerrar todo de golpe ───────────────────────────────────
+  const closeCompactMenu = () => {
+    clearTimeout(categoryTimeoutRef.current);
+    setShowCompactCategories(false);
+    setActiveCategory(null);
+  };
+
+  // ─── Categorías normales (modo no-compacto) ───────────────────────────────
   const handleCategoryMouseEnter = (category) => {
     if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
     setActiveCategory(category);
@@ -121,25 +119,21 @@ export default function Navbar() {
     categoryTimeoutRef.current = setTimeout(() => setActiveCategory(null), 150);
   };
 
-  // Manejar menú compacto
+  // ─── Menú compacto ────────────────────────────────────────────────────────
+  // El contenedor padre (div ref={compactMenuRef}) maneja enter/leave global.
+  // El mega menú fixed NO tiene sus propios handlers — el overlay negro
+  // se encarga de cerrarlo cuando el cursor llega a la página.
   const handleCompactMenuMouseEnter = () => {
     if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
     setShowCompactCategories(true);
   };
 
+  // Este leave solo se dispara si el cursor sale del botón SIN entrar
+  // al mega menú (porque el mega menú es fixed y está fuera del DOM del div).
+  // El overlay negro cubre el resto → al llegar ahí se cierra todo.
   const handleCompactMenuMouseLeave = () => {
     categoryTimeoutRef.current = setTimeout(() => {
-      setShowCompactCategories(false);
-    }, 150);
-  };
-
-  const handleCompactMegaMenuEnter = () => {
-    if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
-  };
-
-  const handleCompactMegaMenuLeave = () => {
-    categoryTimeoutRef.current = setTimeout(() => {
-      setShowCompactCategories(false);
+      closeCompactMenu();
     }, 150);
   };
 
@@ -163,8 +157,7 @@ export default function Navbar() {
     };
     if (isSearchActive) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isSearchActive]);
 
@@ -223,7 +216,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Fondos oscuros */}
+      {/* ── Overlay: menú usuario ─────────────────────────────────────────── */}
       <AnimatePresence>
         {showUser && (
           <motion.div
@@ -236,6 +229,7 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
+      {/* ── Overlay: buscador ─────────────────────────────────────────────── */}
       <AnimatePresence>
         {isSearchActive && (
           <motion.div
@@ -248,6 +242,8 @@ export default function Navbar() {
         )}
       </AnimatePresence>
 
+      {/* ── Overlay: categorías ───────────────────────────────────────────── */}
+      {/* onMouseEnter cierra el menú en cuanto el cursor llega a la página    */}
       <AnimatePresence>
         {(activeCategory || showCompactCategories) && (
           <motion.div
@@ -255,15 +251,13 @@ export default function Navbar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 z-40"
-            onClick={() => {
-              setActiveCategory(null);
-              setShowCompactCategories(false);
-            }}
+            onClick={closeCompactMenu}
+            onMouseEnter={closeCompactMenu}
           />
         )}
       </AnimatePresence>
 
-      {/* Barra superior - siempre visible */}
+      {/* ── Barra superior ────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -274,28 +268,29 @@ export default function Navbar() {
         <span className="text-gray-300">Ofertas exclusivas todos los días</span>
       </motion.div>
 
-      {/* Navbar principal - se oculta/muestra con scroll */}
+      {/* ── Navbar principal ──────────────────────────────────────────────── */}
       <motion.header
         animate={{ y: isNavbarVisible ? 0 : -200 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className={`bg-white transition-all duration-300 ${scrolled && isNavbarVisible ? "shadow-lg" : "shadow-sm"
           }`}
-        style={{ position: "sticky", top: 0, zIndex: 40 }}
+        style={{ position: "sticky", top: "40px", zIndex: 40 }}
       >
-        {/* Navbar principal */}
         <div
-          className={`max-w-7xl mx-auto pl-1 pr-4 py-3 flex items-center ${isCompact ? "gap-4" : "gap-24"}`}
+          className={`max-w-7xl mx-auto pl-1 pr-4 py-3 flex items-center ${isCompact ? "gap-4" : "gap-24"
+            }`}
         >
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 -ml-8">
             <img
               src={logo}
               alt="MirageMart"
-              className={`transition-all duration-300 ${isCompact ? "w-32 md:w-24 h-auto" : "w-44 md:w-32 h-auto"}`}
+              className={`transition-all duration-300 ${isCompact ? "w-32 md:w-24 h-auto" : "w-44 md:w-32 h-auto"
+                }`}
             />
           </Link>
 
-          {/* Botón de categorías en modo compacto */}
+          {/* ── Botón categorías (modo compacto) ──────────────────────────── */}
           {isCompact && (
             <div
               className="relative"
@@ -304,17 +299,17 @@ export default function Navbar() {
               onMouseLeave={handleCompactMenuMouseLeave}
             >
               <button className="flex items-center gap-2 px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors duration-200">
-                <Grid3x3 size={18} className="text-gray-700" />
                 <span className="text-sm font-medium text-gray-700 hidden sm:block">
                   Categorías
                 </span>
                 <ChevronDown
-                  size={14}
-                  className={`text-gray-500 transition-transform duration-200 ${showCompactCategories ? "rotate-180" : ""}`}
+                  size={16}
+                  className={`text-gray-600 transition-transform duration-200 ${showCompactCategories ? "rotate-180" : ""
+                    }`}
                 />
               </button>
 
-              {/* Mega menú compacto con imágenes */}
+              {/* Mega menú compacto — fixed, fuera del flujo del div padre */}
               <AnimatePresence>
                 {showCompactCategories && categoriesWithSub.length > 0 && (
                   <motion.div
@@ -322,55 +317,116 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50"
-                    onMouseEnter={handleCompactMegaMenuEnter}
-                    onMouseLeave={handleCompactMegaMenuLeave}
+                    className="fixed left-0 right-0 top-[106px] bg-white shadow-2xl z-50 border-t border-gray-100"
+                  // Sin handlers propios: el overlay negro cierra al salir
                   >
-                    <div className="max-h-96 overflow-y-auto">
-                      {categoriesWithSub.map((cat) => (
-                        <div key={cat.id} className="group">
-                          <Link
-                            to={`/category/${cat.id}`}
-                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors"
-                            onClick={() => setShowCompactCategories(false)}
-                          >
-                            {/* Imagen pequeña para categoría principal */}
-                            {cat.imagen_url && (
-                              <img
-                                src={cat.imagen_url}
-                                alt={cat.nombre}
-                                className="w-8 h-8 rounded-full object-cover"
-                              />
-                            )}
-                            <span className="text-sm text-gray-700 flex-1">{cat.nombre}</span>
-                            {cat.subcategorias?.length > 0 && (
+                    <div className="max-w-7xl mx-auto px-4">
+                      <div className="flex max-h-[500px]">
+
+                        {/* Columna izquierda */}
+                        <div className="w-64 bg-gray-50 rounded-l-xl overflow-y-auto border-r border-gray-100">
+                          {categoriesWithSub.map((cat) => (
+                            <div
+                              key={cat.id}
+                              className={`
+                                flex items-center justify-between px-4 py-3 cursor-pointer
+                                transition-all duration-150 border-r-2
+                                ${activeCategory?.id === cat.id
+                                  ? "bg-white text-orange-500 border-orange-500"
+                                  : "text-gray-600 border-transparent"
+                                }
+                              `}
+                              onMouseEnter={() => handleCategoryMouseEnter(cat)}
+                            >
+                              <span className="text-sm font-medium">
+                                {cat.nombre}
+                              </span>
                               <ChevronRight size={14} className="text-gray-400" />
-                            )}
-                          </Link>
-                          {/* Subcategorías dentro del menú compacto */}
-                          {cat.subcategorias?.length > 0 && (
-                            <div className="pl-12 pr-4 pb-2">
-                              {cat.subcategorias.slice(0, 5).map((sub) => (
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Columna derecha */}
+                        <div className="flex-1 bg-white rounded-r-xl overflow-y-auto p-4">
+                          {activeCategory ? (
+                            <>
+                              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                                <span className="text-orange-500 text-sm">✦</span>
+                                <h6 className="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                                  {activeCategory.nombre}
+                                </h6>
+                              </div>
+
+                              <div className="flex flex-wrap gap-3">
+                                {/* Ver todo */}
                                 <Link
-                                  key={sub.id}
-                                  to={`/category/${sub.id}`}
-                                  className="flex items-center gap-2 py-1.5 text-xs text-gray-500 hover:text-red-500 hover:bg-gray-50 px-2 rounded"
-                                  onClick={() => setShowCompactCategories(false)}
+                                  to={`/category/${activeCategory.id}`}
+                                  className="flex flex-col items-center text-center group"
+                                  style={{ width: "84px" }}
+                                  onClick={closeCompactMenu}
                                 >
-                                  {sub.imagen_url && (
-                                    <img
-                                      src={sub.imagen_url}
-                                      alt={sub.nombre}
-                                      className="w-5 h-5 rounded-full object-cover"
-                                    />
-                                  )}
-                                  {sub.nombre}
+                                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center group-hover:shadow-md transition-shadow border border-gray-200">
+                                    {activeCategory.imagen_url ? (
+                                      <img
+                                        src={activeCategory.imagen_url}
+                                        alt={activeCategory.nombre}
+                                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform"
+                                      />
+                                    ) : (
+                                      <span className="text-[10px] text-gray-400 font-medium">
+                                        TODO
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="mt-2 text-[11px] text-gray-500 group-hover:text-orange-500 leading-tight">
+                                    Ver todo
+                                  </span>
                                 </Link>
-                              ))}
+
+                                {/* Subcategorías */}
+                                {activeCategory.subcategorias
+                                  ?.slice(0, 14)
+                                  .map((sub) => (
+                                    <Link
+                                      key={sub.id}
+                                      to={`/category/${sub.id}`}
+                                      className="flex flex-col items-center text-center group"
+                                      style={{ width: "84px" }}
+                                      onClick={closeCompactMenu}
+                                    >
+                                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
+                                        <img
+                                          src={sub.imagen_url}
+                                          alt={sub.nombre}
+                                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                      </div>
+                                      <span className="mt-2 text-[11px] text-gray-600 group-hover:text-black leading-tight w-full text-center line-clamp-3 break-words hyphens-auto">
+                                        {sub.nombre}
+                                      </span>
+                                    </Link>
+                                  ))}
+                              </div>
+
+                              {activeCategory.subcategorias?.length > 15 && (
+                                <div className="mt-4 pt-2 text-center">
+                                  <Link
+                                    to={`/category/${activeCategory.id}`}
+                                    className="text-xs text-orange-500 hover:text-orange-600 font-medium"
+                                    onClick={closeCompactMenu}
+                                  >
+                                    Ver más de {activeCategory.nombre} →
+                                  </Link>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                              Selecciona una categoría
                             </div>
                           )}
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -378,17 +434,17 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Buscador desktop */}
+          {/* ── Buscador desktop ──────────────────────────────────────────── */}
           <div
             className={`flex-1 ${isCompact ? "max-w-2xl" : "max-w-xl"}`}
             ref={searchRef}
           >
             <form onSubmit={handleSearch} className="relative">
               <div
-                className={`flex border-1 rounded-xl overflow-hidden transition-all duration-300 ${isSearchActive
-                  ? "border-black"
+                className={`flex border-2 rounded-xl overflow-hidden transition-all duration-300 ${isSearchActive
+                  ? "border-red-500 shadow-lg shadow-red-200 ring-2 ring-red-200"
                   : showSearch
-                    ? "border-red-400"
+                    ? "border-red-400 shadow-lg shadow-red-100"
                     : "border-gray-200"
                   } ${isSearchActive ? "relative z-50 bg-white" : ""}`}
               >
@@ -405,7 +461,7 @@ export default function Navbar() {
                 />
                 <button
                   type="submit"
-                  className="bg-red-500 hover:bg-red-600 px-5 text-white transition flex items-center gap-1.5"
+                  className="bg-gray-800 hover:bg-red-600 px-3 text-white transition flex items-center gap-1.5"
                 >
                   <Search size={16} />
                   {!isCompact && (
@@ -423,7 +479,9 @@ export default function Navbar() {
                   exit={{ opacity: 0, x: 10 }}
                   onClick={handleSearchClose}
                   className="absolute -right-12 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 font-medium text-sm"
-                ></motion.button>
+                >
+                  Cancelar
+                </motion.button>
               )}
 
               {/* Resultados de búsqueda */}
@@ -470,7 +528,7 @@ export default function Navbar() {
                         <button
                           onMouseDown={() => {
                             navigate(
-                              `/products?q=${encodeURIComponent(searchInput)}`,
+                              `/products?q=${encodeURIComponent(searchInput)}`
                             );
                             handleSearchClose();
                           }}
@@ -490,8 +548,9 @@ export default function Navbar() {
             </form>
           </div>
 
-          {/* Iconos derecha */}
+          {/* ── Iconos derecha ────────────────────────────────────────────── */}
           <div className="flex items-center gap-1 ml-auto">
+
             {/* Carrito */}
             <motion.button
               onClick={openCart}
@@ -611,11 +670,7 @@ export default function Navbar() {
                         </div>
                         {[
                           { to: "/profile", icon: User, label: "Mi perfil" },
-                          {
-                            to: "/orders",
-                            icon: Package,
-                            label: "Mis pedidos",
-                          },
+                          { to: "/orders", icon: Package, label: "Mis pedidos" },
                           { to: "/wishlist", icon: Heart, label: "Favoritos" },
                         ].map(({ to, icon: Icon, label }) => (
                           <Link
@@ -700,7 +755,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Categorías desktop - Solo visible en modo normal */}
+        {/* ── Categorías desktop (modo normal) ──────────────────────────── */}
         {!isCompact && categoriesWithSub?.length > 0 && (
           <div
             className="hidden sm:block border-t border-gray-100 relative"
@@ -741,7 +796,8 @@ export default function Navbar() {
                 ))}
               </div>
             </div>
-            {/* Mega Menú normal con imágenes */}
+
+            {/* Mega menú normal */}
             <AnimatePresence>
               {activeCategory && activeCategory.subcategorias?.length > 0 && (
                 <motion.div
@@ -760,7 +816,6 @@ export default function Navbar() {
                           to={`/category/${sub.id}`}
                           className="group flex flex-col items-center text-center hover:bg-gray-50 rounded-xl p-3 transition-all duration-200"
                         >
-                          {/* Imagen redonda estilo Temu */}
                           <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-100 overflow-hidden mb-2 shadow-sm group-hover:shadow-md transition-shadow">
                             {sub.imagen_url ? (
                               <img
@@ -770,13 +825,22 @@ export default function Navbar() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                <svg
+                                  className="w-8 h-8 text-gray-300"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1}
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                  />
                                 </svg>
                               </div>
                             )}
                           </div>
-                          {/* Nombre de la subcategoría */}
                           <span className="text-xs md:text-sm font-medium text-gray-700 group-hover:text-red-500 transition-colors line-clamp-2">
                             {sub.nombre}
                           </span>
@@ -790,7 +854,7 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Menú móvil */}
+        {/* ── Menú móvil ────────────────────────────────────────────────── */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
