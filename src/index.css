@@ -232,3 +232,27 @@ html {
 .bg-morado {
   background-color: #805ad5;
 }
+/* Swatches estilo Temu/Shein */
+.color-swatch {
+  transition: transform 0.2s ease;
+}
+
+.color-swatch:hover {
+  transform: scale(1.05);
+}
+
+.swatch-image {
+  transition: transform 0.3s ease;
+}
+
+.color-swatch:hover .swatch-image {
+  transform: scale(1.1);
+}
+
+.swatch-tooltip {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.swatch-label {
+  transition: color 0.2s ease;
+}

@@ -5,6 +5,7 @@ import { useUpdateCartItem, useRemoveCartItem } from "../../hooks/useCart.js";
 import { formatPrice } from "../../utils/formatPrice.js";
 
 export default function CartItem({ item }) {
+
   const updateItem = useUpdateCartItem();
   const removeItem = useRemoveCartItem();
 
@@ -53,7 +54,6 @@ export default function CartItem({ item }) {
         />
       </Link>
 
-      {/* Info - Nombre clickeable */}
       <div className="flex-1 min-w-0">
         <Link
           to={`/products/${item.product_id}`}
@@ -61,18 +61,29 @@ export default function CartItem({ item }) {
         >
           {getProductName()}
         </Link>
-        {item.variante_opciones && (
+
+        {/* Mostrar opciones de variante (color, talla) */}
+        {item.variant_opciones && (
           <p className="text-xs text-gray-400 mt-0.5">
-            {Object.entries(JSON.parse(item.variante_opciones || "{}"))
-              .map(([k, v]) => `${k}: ${v}`)
-              .join(" · ")}
+            {(() => {
+              try {
+                const opts = typeof item.variant_opciones === 'string'
+                  ? JSON.parse(item.variant_opciones)
+                  : item.variant_opciones;
+                const parts = [];
+                if (opts.Talla) parts.push(`Talla: ${opts.Talla}`);
+                if (opts.Color) parts.push(`Color: ${opts.Color}`);
+                return parts.length > 0 ? parts.join(" · ") : null;
+              } catch (e) {
+                return null;
+              }
+            })()}
           </p>
         )}
         <p className="text-red-500 font-bold text-sm mt-1">
           {formatPrice(getUnitPrice() * item.cantidad)}
         </p>
       </div>
-
       {/* Controles */}
       <div className="flex flex-col items-end gap-2">
         <button

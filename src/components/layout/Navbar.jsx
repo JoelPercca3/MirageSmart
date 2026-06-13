@@ -67,9 +67,11 @@ export default function Navbar() {
   }, [lastScrollY]);
 
   // Efecto para compact mode en product detail
+  // Efecto para compact mode en product detail y products page
   useEffect(() => {
     const isProductPage = location.pathname.includes("/products/");
-    setIsCompact(isProductPage);
+    const isProductsPage = location.pathname === "/products";
+    setIsCompact(isProductPage || isProductsPage);
     setScrolled(window.scrollY > 20);
   }, [location.pathname]);
 
@@ -507,20 +509,39 @@ export default function Navbar() {
                             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                           >
                             <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                              {product.imagen_principal && (
-                                <img
-                                  src={product.imagen_principal}
-                                  alt={product.nombre}
-                                  className="w-full h-full object-cover"
-                                />
-                              )}
+                              {(() => {
+                                // ✅ Obtener la imagen correcta
+                                let imageUrl = null;
+                                if (product.images && product.images.length > 0) {
+                                  const baseImage = product.images.find(img => !img.variant_id);
+                                  imageUrl = baseImage?.url || product.images[0]?.url;
+                                }
+                                if (!imageUrl && product.imagen_principal) {
+                                  imageUrl = product.imagen_principal;
+                                }
+                                return imageUrl ? (
+                                  <img
+                                    src={imageUrl}
+                                    alt={product.nombre}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Package size={16} className="text-gray-300" />
+                                  </div>
+                                );
+                              })()}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-800 truncate">
                                 {product.nombre}
                               </p>
                               <p className="text-xs text-red-500 font-bold">
-                                S/ {Number(product.precio_final).toFixed(2)}
+                                {/* ✅ Calcular precio correctamente */}
+                                {(() => {
+                                  const precio = product.precio_oferta || product.precio_base;
+                                  return precio ? `S/ ${Number(precio).toFixed(2)}` : "Precio no disponible";
+                                })()}
                               </p>
                             </div>
                           </button>

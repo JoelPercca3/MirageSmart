@@ -6,6 +6,8 @@ import Spinner from "../components/ui/Spinner.jsx";
 import Button from "../components/ui/Button.jsx";
 import { formatPrice } from "../utils/formatPrice.js";
 import { formatDateShort } from "../utils/formatDate.js";
+import OrderReviewButton from "../components/orders/OrderReviewButton.jsx";
+
 
 const STATUS_STYLES = {
   pendiente: "bg-yellow-100 text-yellow-700",
@@ -28,8 +30,7 @@ export default function OrdersPage() {
     );
 
   const orders = data?.rows || data?.data || [];
-  console.log("data completo:", data);
-  console.log("orders:", orders);
+
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -51,13 +52,17 @@ export default function OrdersPage() {
       ) : (
         <div className="flex flex-col gap-4">
           {orders.map((order, i) => (
+
             <motion.div
               key={order.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
+
             >
+
               <Link to={`/orders/${order.id}`}>
+
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md transition">
                   <div className="flex items-center justify-between mb-3">
                     <div>

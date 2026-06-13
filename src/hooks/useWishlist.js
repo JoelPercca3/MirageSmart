@@ -9,11 +9,17 @@ export const useWishlist = () => {
   return useQuery({
     queryKey: ["wishlist"],
     queryFn: () => wishlistAPI.getWishlist(),
-    select: (res) => res.data,
+    select: (res) => {
+      // ✅ Eliminar duplicados por product_id
+      const uniqueItems = res.data.filter(
+        (item, index, self) =>
+          index === self.findIndex((i) => i.product_id === item.product_id),
+      );
+      return uniqueItems;
+    },
     enabled: !!token,
   });
 };
-
 export const useToggleWishlist = () => {
   const queryClient = useQueryClient();
 

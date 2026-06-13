@@ -10,11 +10,11 @@ import { SkeletonGrid } from "../components/ui/SkeletonCard.jsx";
 import Button from "../components/ui/Button.jsx";
 
 const SORT_OPTIONS = [
-  { label: "Más recientes", value: "newest" },
-  { label: "Menor precio", value: "price_asc" },
-  { label: "Mayor precio", value: "price_desc" },
-  { label: "Más vendidos", value: "popular" },
-  { label: "Mejor valorados", value: "rating" },
+  { label: "Más recientes", value: "created_at:desc" },
+  { label: "Menor precio", value: "precio:asc" },
+  { label: "Mayor precio", value: "precio:desc" },
+  { label: "Más vendidos", value: "ventas:desc" },
+  { label: "Mejor valorados", value: "rating:desc" },
 ];
 
 export default function ProductsPage() {
@@ -59,9 +59,9 @@ export default function ProductsPage() {
   const hasFilters = q || category_id || min_price || max_price;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="w-full px-28 py-3">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-0">
         <div>
           <h1 className="text-xl font-bold text-gray-800">
             {q ? `Resultados para "${q}"` : "Todos los productos"}
@@ -83,11 +83,12 @@ export default function ProductsPage() {
 
       <div className="flex gap-6">
         {/* Sidebar filtros */}
+
         <aside
           className={`w-64 flex-shrink-0 flex-col gap-5 ${showFilters ? "flex" : "hidden"} sm:flex`}
         >
           <div className="bg-white rounded-2xl border border-gray-100 p-5 sticky top-24">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-gray-800">Filtros</h3>
               {hasFilters && (
                 <button
@@ -107,11 +108,10 @@ export default function ProductsPage() {
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => setParam("category_id", "")}
-                  className={`text-left text-sm px-3 py-1.5 rounded-lg transition ${
-                    !category_id
-                      ? "bg-red-50 text-red-500 font-medium"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
+                  className={`text-left text-sm px-3 py-1.5 rounded-lg transition ${!category_id
+                    ? "bg-red-50 text-red-500 font-medium"
+                    : "text-gray-600 hover:bg-gray-50"
+                    }`}
                 >
                   Todas
                 </button>
@@ -121,11 +121,10 @@ export default function ProductsPage() {
                     <button
                       key={cat.id}
                       onClick={() => setParam("category_id", cat.id)}
-                      className={`text-left text-sm px-3 py-1.5 rounded-lg transition ${
-                        category_id == cat.id
-                          ? "bg-red-50 text-red-500 font-medium"
-                          : "text-gray-600 hover:bg-gray-50"
-                      }`}
+                      className={`text-left text-sm px-3 py-1.5 rounded-lg transition ${category_id == cat.id
+                        ? "bg-red-50 text-red-500 font-medium"
+                        : "text-gray-600 hover:bg-gray-50"
+                        }`}
                     >
                       {cat.nombre}
                     </button>
@@ -181,16 +180,15 @@ export default function ProductsPage() {
         {/* Productos */}
         <div className="flex-1 min-w-0">
           {/* Sort */}
-          <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4">
+          <div className="flex gap-4 overflow-x-auto no-scrollbar mb-6">
             {SORT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setParam("sort", opt.value)}
-                className={`whitespace-nowrap text-xs px-4 py-2 rounded-full border transition ${
-                  sort === opt.value
-                    ? "bg-red-500 text-white border-red-500"
-                    : "border-gray-200 text-gray-600 hover:border-red-400 hover:text-red-500"
-                }`}
+                className={`whitespace-nowrap text-xs px-4 py-2 rounded-full border transition ${sort === opt.value
+                  ? "bg-red-500 text-white border-red-500"
+                  : "border-gray-200 text-gray-600 hover:border-red-400 hover:text-red-500"
+                  }`}
               >
                 {opt.label}
               </button>
@@ -217,7 +215,7 @@ export default function ProductsPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+              className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4"
             >
               {products.map((product, i) => (
                 <motion.div
@@ -252,11 +250,10 @@ export default function ProductsPage() {
                       <button
                         key={p}
                         onClick={() => setParam("page", p)}
-                        className={`w-9 h-9 rounded-lg text-sm font-medium transition ${
-                          Number(page) === p
-                            ? "bg-red-500 text-white"
-                            : "border border-gray-200 text-gray-600 hover:border-red-400"
-                        }`}
+                        className={`w-9 h-9 rounded-lg text-sm font-medium transition ${Number(page) === p
+                          ? "bg-red-500 text-white"
+                          : "border border-gray-200 text-gray-600 hover:border-red-400"
+                          }`}
                       >
                         {p}
                       </button>

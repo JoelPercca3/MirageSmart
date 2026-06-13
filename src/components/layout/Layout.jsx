@@ -3,6 +3,7 @@ import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
 import CartDrawer from "../cart/CartDrawer.jsx";
 import ScrollToTop from "../ui/ScrollToTop.jsx";
+import WhatsAppButton from "../ui/WhatsAppButton.jsx"; // ← AGREGAR
 
 export default function Layout() {
   return (
@@ -14,6 +15,7 @@ export default function Layout() {
       <Footer />
       <CartDrawer />
       <ScrollToTop />
+      <WhatsAppButton /> {/* ← AGREGAR */}
     </div>
   );
 }

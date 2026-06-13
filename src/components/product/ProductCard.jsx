@@ -22,15 +22,53 @@ export default function ProductCard({ product }) {
   const token = useAuthStore((s) => s.token);
   const navigate = useNavigate();
 
-  // Obtener imágenes del producto
-  const imagenes = product.imagenes
-    ? typeof product.imagenes === "string"
-      ? JSON.parse(product.imagenes)
-      : product.imagenes
-    : [];
+  // ✅ OBTENER IMAGEN PRINCIPAL CORRECTA
+  const getPrimaryImage = () => {
+    // 1. Si el producto tiene imágenes en product_images
+    if (product.images && product.images.length > 0) {
+      // Buscar imagen base (sin variant_id) o la primera imagen
+      const baseImage = product.images.find(img => !img.variant_id);
+      if (baseImage) return baseImage.url;
+      // Si no hay imagen base, usar la primera imagen de cualquier variante
+      return product.images[0]?.url;
+    }
 
-  const primaryImage = imagenes[0] || product.imagen_principal;
-  const secondaryImage = imagenes[1] || null;
+    // 2. Fallback: usar imagenes JSON legacy
+    if (product.imagenes) {
+      try {
+        const imagenes = typeof product.imagenes === "string"
+          ? JSON.parse(product.imagenes)
+          : product.imagenes;
+        if (imagenes.length > 0) return imagenes[0];
+      } catch (e) { }
+    }
+
+    // 3. Último fallback
+    return product.imagen_principal || null;
+  };
+
+  // ✅ OBTENER IMAGEN SECUNDARIA (para hover)
+  const getSecondaryImage = () => {
+    if (product.images && product.images.length > 1) {
+      const baseImages = product.images.filter(img => !img.variant_id);
+      if (baseImages.length > 1) return baseImages[1]?.url;
+    }
+
+    // Fallback a JSON legacy
+    if (product.imagenes) {
+      try {
+        const imagenes = typeof product.imagenes === "string"
+          ? JSON.parse(product.imagenes)
+          : product.imagenes;
+        if (imagenes.length > 1) return imagenes[1];
+      } catch (e) { }
+    }
+
+    return null;
+  };
+
+  const primaryImage = getPrimaryImage();
+  const secondaryImage = getSecondaryImage();
 
   const handleWishlist = (e) => {
     e.preventDefault();
@@ -62,36 +100,34 @@ export default function ProductCard({ product }) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <Link to={`/products/${product.id}`}>
-        {/* Imagen */}
         <div
           className="relative overflow-hidden bg-gray-100"
-          style={{ paddingBottom: "133.333%" }}
+          style={{ paddingBottom: "138%" }}
         >
           {!imageLoaded && <div className="absolute inset-0 shimmer" />}
 
-          {/* Imagen primaria — estática, nunca cambia */}
+          {/* Imagen primaria */}
           <img
             src={getImageUrl(primaryImage)}
             alt={product.nombre}
             onLoad={() => setImageLoaded(true)}
-            className={`absolute inset-0 w-full h-full object-cover z-10
-    transition-opacity duration-300
-    ${imageLoaded ? "opacity-100" : "opacity-0"}
-  `}
+            className={`absolute inset-0 w-full h-full object-cover z-10 transition-opacity duration-300
+              ${imageLoaded ? "opacity-100" : "opacity-0"}
+            `}
           />
 
-          {/* Imagen secundaria — usa tus clases CSS globales igual que Shein */}
+          {/* Imagen secundaria (hover) */}
           {secondaryImage && (
             <img
               src={getImageUrl(secondaryImage)}
               alt={product.nombre}
               className={`absolute inset-0 w-full h-full object-cover z-20
-      ${isHovered ? "image-fade-in" : "image-fade-out"}
-    `}
+                ${isHovered ? "image-fade-in" : "image-fade-out"}
+              `}
             />
           )}
 
-          {/* Overlay y botones que aparecen al hacer hover */}
+          {/* Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: isHovered ? 1 : 0 }}
@@ -99,7 +135,7 @@ export default function ProductCard({ product }) {
             className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"
           />
 
-          {/* Botones acción - aparecen al hacer hover */}
+          {/* Botones */}
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: isHovered ? 0 : "100%" }}
@@ -119,7 +155,7 @@ export default function ProductCard({ product }) {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleViewProduct}
-              className="bg-white/90 text-gray-700 p-2 rounded-xl  shadow-lg hover:bg-gray-100 transition flex items-center justify-center"
+              className="bg-white/90 text-gray-700 p-2 rounded-xl shadow-lg hover:bg-gray-100 transition flex items-center justify-center"
             >
               <Eye size={14} />
             </motion.button>
@@ -138,7 +174,7 @@ export default function ProductCard({ product }) {
           </motion.button>
         </div>
 
-        {/* Info */}
+        {/* Info del producto */}
         <div className="p-3">
           <p className="text-xs text-gray-400 mb-0.5 truncate">
             {product.marca || product.categoria}
@@ -147,7 +183,6 @@ export default function ProductCard({ product }) {
             {product.nombre}
           </h3>
 
-          {/* Rating */}
           {product.rating_count > 0 && (
             <div className="flex items-center gap-1 mb-2">
               <div className="flex">
@@ -169,7 +204,6 @@ export default function ProductCard({ product }) {
             </div>
           )}
 
-          {/* Precio + descuento */}
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="text-red-500 font-extrabold text-base">
               {formatPrice(
@@ -191,7 +225,6 @@ export default function ProductCard({ product }) {
             )}
           </div>
 
-          {/* Badges NUEVO / TOP */}
           <div className="flex items-center gap-1 flex-wrap mb-1">
             {product.es_nuevo === 1 && (
               <span className="text-xs font-bold text-green-600 border border-green-500 px-1.5 py-0.5 rounded">
@@ -205,7 +238,6 @@ export default function ProductCard({ product }) {
             )}
           </div>
 
-          {/* Ventas y stock */}
           <div className="flex items-center justify-between mt-1">
             {product.ventas_count > 0 && (
               <p className="text-xs text-gray-400">

@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { cartAPI } from "../api/cart.api.js";
-import api from "../api/axios.js"; // ← IMPORTANTE: Agregar esta línea
+import api from "../api/axios.js";
 import useCartStore from "../store/useCartStore.js";
 import useAuthStore from "../store/useAuthStore.js";
-import { productAPI } from "../api/product.api.js"; // ← Para obtener datos del producto
+import { productAPI } from "../api/product.api.js";
 
 export const useCart = () => {
   const { setCart } = useCartStore();
@@ -14,6 +14,7 @@ export const useCart = () => {
     queryKey: ["cart"],
     queryFn: async () => {
       const res = await cartAPI.getCart();
+
       setCart(res.data);
       return res.data;
     },
@@ -40,11 +41,11 @@ export const useAddToCart = () => {
   return useMutation({
     mutationFn: async ({ product_id, variant_id, cantidad }) => {
       if (token) {
-        // Usuario logueado: enviar al backend
         const res = await cartAPI.addItem({ product_id, variant_id, cantidad });
+        const cartRes = await cartAPI.getCart();
+        useCartStore.getState().setCart(cartRes.data);
         return res.data;
       } else {
-        // Usuario NO logueado: guardar en localStorage
         const currentItems = useCartStore.getState().items;
         const existingIndex = currentItems.findIndex(
           (i) => i.product_id === product_id && i.variant_id === variant_id,
@@ -55,19 +56,25 @@ export const useAddToCart = () => {
           newItems = [...currentItems];
           newItems[existingIndex].cantidad += cantidad;
         } else {
-          // Obtener datos del producto
           const product = await getProductById(product_id);
-          if (!product) {
-            throw new Error("Producto no encontrado");
-          }
+          if (!product) throw new Error("Producto no encontrado");
 
-          // Obtener datos de la variante si existe
           let variantInfo = null;
           let precioExtra = 0;
+          let variantOptions = null;
+          let variantImage = null;
+
           if (variant_id && product.variants) {
             variantInfo = product.variants.find((v) => v.id === variant_id);
             if (variantInfo) {
               precioExtra = Number(variantInfo.precio_extra) || 0;
+              variantOptions = variantInfo.opciones;
+              if (product.images) {
+                const foundImage = product.images.find(
+                  (img) => img.variant_id === variant_id,
+                );
+                if (foundImage) variantImage = foundImage.url;
+              }
             }
           }
 
@@ -77,25 +84,26 @@ export const useAddToCart = () => {
           newItems = [
             ...currentItems,
             {
-              id: Date.now(), // ID temporal
+              id: Date.now(),
               product_id: product_id,
               variant_id: variant_id || null,
               nombre: product.nombre,
               precio_unitario: precioUnitario,
               cantidad: cantidad,
               imagen:
-                product.imagen_principal || product.images?.[0]?.url || null,
-              variante_opciones: variantInfo?.opciones
-                ? JSON.stringify(variantInfo.opciones)
+                variantImage ||
+                product.imagen_principal ||
+                product.images?.[0]?.url ||
+                null,
+              variante_opciones: variantOptions
+                ? JSON.stringify(variantOptions)
                 : null,
             },
           ];
         }
 
-        // Actualizar store y guardar en localStorage
         useCartStore.setState({ items: newItems });
-        useCartStore.getState().recalcTotals(); // ← AGREGAR ESTA LÍNEA
-
+        useCartStore.getState().recalcTotals();
         useCartStore.getState().saveCartToLocal();
 
         return { success: true, local: true };
@@ -103,9 +111,8 @@ export const useAddToCart = () => {
     },
     onSuccess: (data) => {
       toast.success("Producto agregado al carrito");
-      // Si el usuario está logueado, refrescar el carrito
       if (token) {
-        queryClient.invalidateQueries({ queryKey: ["cart"] });
+        useCartStore.getState().loadCartFromLocal();
       }
     },
     onError: (err) => {
@@ -122,7 +129,6 @@ export const useUpdateCartItem = () => {
   return useMutation({
     mutationFn: ({ id, cantidad }) => cartAPI.updateItem(id, cantidad),
     onSuccess: async () => {
-      // Refrescar el carrito desde el backend
       if (token) {
         const res = await cartAPI.getCart();
         setCart(res.data);
@@ -141,7 +147,6 @@ export const useRemoveCartItem = () => {
   return useMutation({
     mutationFn: cartAPI.removeItem,
     onSuccess: async () => {
-      // Refrescar el carrito desde el backend
       if (token) {
         const res = await cartAPI.getCart();
         setCart(res.data);
@@ -152,6 +157,7 @@ export const useRemoveCartItem = () => {
     onError: (err) => toast.error(err.message || "Error al eliminar"),
   });
 };
+
 export const useClearCart = () => {
   const queryClient = useQueryClient();
   const token = useAuthStore((s) => s.token);

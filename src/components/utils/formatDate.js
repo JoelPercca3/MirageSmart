@@ -9,3 +9,7 @@ export const formatDateShort = (date) =>
 
 export const timeAgo = (date) =>
   formatDistanceToNow(new Date(date), { addSuffix: true, locale: es });
+
+// ✅ Agrega esta función
+export const formatDateLong = (date) =>
+  format(new Date(date), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: es });

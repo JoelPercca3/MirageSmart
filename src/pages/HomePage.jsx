@@ -13,6 +13,7 @@ import { categoryAPI } from "../api/category.api.js";
 import { useFeaturedProducts } from "../hooks/useProducts.js";
 import ProductCard from "../components/product/ProductCard.jsx";
 import { SkeletonGrid } from "../components/ui/SkeletonCard.jsx";
+
 // ── Animaciones ───────────────────────────────────────────
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
@@ -46,7 +47,7 @@ const SLIDES = [
   },
   {
     bg: "from-blue-600 via-cyan-500 to-teal-400",
-    tag: "🚀 Envío gratis",
+    tag: "🚚 Envío gratis",
     title: "En pedidos +S/ 150",
     sub: "Rápido, seguro y directo a tu puerta",
     btn: "Comprar",
@@ -86,7 +87,6 @@ function HeroBanner() {
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
     >
-      {/* Slide actual */}
       <motion.div
         key={current}
         className={`absolute inset-0 bg-gradient-to-r ${slide.bg} animate-gradient flex items-center`}
@@ -95,7 +95,6 @@ function HeroBanner() {
         exit={{ opacity: 0, x: -60 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Contenido */}
         <div className="px-8 sm:px-14 text-white flex-1">
           <motion.p
             className={`text-xs sm:text-sm font-semibold mb-1 ${slide.color}`}
@@ -135,12 +134,10 @@ function HeroBanner() {
           </motion.div>
         </div>
 
-        {/* Emoji decorativo */}
         <div className="hidden sm:flex items-center justify-center w-48 h-full opacity-20">
           <span className="text-9xl">{slide.emoji}</span>
         </div>
 
-        {/* Círculos decorativos */}
         <div className="absolute right-0 top-0 bottom-0 w-1/3 pointer-events-none overflow-hidden">
           <div className="absolute top-4 right-8 w-32 h-32 rounded-full border-4 border-white/20 animate-pulse" />
           <div
@@ -151,7 +148,6 @@ function HeroBanner() {
         </div>
       </motion.div>
 
-      {/* Controles */}
       <button
         onClick={() =>
           setCurrent((prev) => (prev - 1 + SLIDES.length) % SLIDES.length)
@@ -167,7 +163,6 @@ function HeroBanner() {
         <ChevronRight size={18} />
       </button>
 
-      {/* Dots */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
         {SLIDES.map((_, i) => (
           <button
@@ -222,7 +217,6 @@ function FlashSale({ products }) {
             </div>
           </div>
 
-          {/* Contador */}
           <div className="flex items-center gap-1">
             <Clock size={14} className="text-white/80" />
             {[pad(timeLeft.h), pad(timeLeft.m), pad(timeLeft.s)].map((t, i) => (
@@ -236,11 +230,10 @@ function FlashSale({ products }) {
           </div>
         </div>
 
-        {/* ✅ Productos flash sale con ProductCard (tiene efecto hover) */}
         {products?.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {products.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} />
+            {products.slice(0, 4).map((product, idx) => (
+              <ProductCard key={`flash-${product.id}-${idx}`} product={product} />
             ))}
           </div>
         )}
@@ -294,7 +287,7 @@ function ProductScrollSection({ title, products, link, isLoading }) {
         >
           {products?.slice(0, 12).map((product, i) => (
             <motion.div
-              key={product.id}
+              key={`scroll-${product.id}-${i}`}
               className="flex-shrink-0 w-44 sm:w-52"
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -331,10 +324,10 @@ function ProductGridSection({ title, products, link, isLoading }) {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4"
         >
-          {products?.slice(0, 10).map((product) => (
-            <motion.div key={product.id} variants={fadeUp}>
+          {products?.slice(0, 10).map((product, idx) => (
+            <motion.div key={`grid-${product.id}-${idx}`} variants={fadeUp}>
               <ProductCard product={product} />
             </motion.div>
           ))}
@@ -379,9 +372,9 @@ function PromoBanners() {
           link: "/products?sort=popular",
           btnColor: "text-orange-600",
         },
-      ].map(({ bg, emoji, tag, title, link, btnColor }) => (
+      ].map(({ bg, emoji, tag, title, link, btnColor }, idx) => (
         <motion.div
-          key={title}
+          key={`banner-${idx}`}
           whileHover={{ scale: 1.02, y: -4 }}
           className={`bg-gradient-to-r ${bg} rounded-2xl p-5 text-white relative overflow-hidden`}
         >
@@ -422,7 +415,7 @@ function TrustStats() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
         {stats.map(({ icon, value, label }, i) => (
           <motion.div
-            key={label}
+            key={`stat-${label}`}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -443,18 +436,21 @@ function TrustStats() {
 export default function HomePage() {
   const { data: featured, isLoading } = useFeaturedProducts();
 
+  // 🔥 Eliminar productos duplicados del array
+  const uniqueProducts = featured?.filter((product, index, self) =>
+    index === self.findIndex((p) => p.id === product.id)
+  ) || [];
+
   return (
     <div className="bg-gray-50 pt-4">
-      {/* HeroBanner a ANCHO COMPLETO - sin margen superior */}
       <HeroBanner />
 
-      {/* Contenido centrado con max-w */}
       <div className="max-w-[1450px] mx-auto px-3 sm:px-4 lg:px-5 pb-16">
-        <FlashSale products={featured} />
+        <FlashSale products={uniqueProducts} />
 
         <ProductScrollSection
           title="⭐ Productos destacados"
-          products={featured}
+          products={uniqueProducts}
           link="/products?sort=popular"
           isLoading={isLoading}
         />
@@ -463,7 +459,7 @@ export default function HomePage() {
 
         <ProductGridSection
           title="🆕 Nuevos ingresos"
-          products={featured}
+          products={uniqueProducts}
           link="/products?sort=newest"
           isLoading={isLoading}
         />
@@ -472,7 +468,7 @@ export default function HomePage() {
 
         <ProductScrollSection
           title="🔥 Más vendidos"
-          products={featured}
+          products={uniqueProducts}
           link="/products?sort=popular"
           isLoading={isLoading}
         />
