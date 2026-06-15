@@ -219,9 +219,9 @@ function ReviewCard({ rev }) {
   }, [rev.imagenes]);
 
   return (
-    <div className="pb-4 border-b border-gray-100">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-medium text-gray-600" aria-hidden="true">
+    <div className="pb-2 border-b border-gray-300">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium text-gray-700" aria-hidden="true">
           {rev.autor?.[0]?.toUpperCase()}
         </div>
         <div>

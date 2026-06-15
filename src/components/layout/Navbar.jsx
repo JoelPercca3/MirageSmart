@@ -21,6 +21,8 @@ import { useLogout } from "../../hooks/useAuth.js";
 import { categoryAPI } from "../../api/category.api.js";
 import { productAPI } from "../../api/product.api.js";
 import logo from "../../assets/logoOficial.png";
+import NotificationBell from "../ui/NotificationBell.jsx";
+
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -571,6 +573,7 @@ export default function Navbar() {
 
           {/* ── Iconos derecha ────────────────────────────────────────────── */}
           <div className="flex items-center gap-1 ml-auto">
+            {user && <NotificationBell />}  {/* ← AGREGAR */}
 
             {/* Carrito */}
             <motion.button
