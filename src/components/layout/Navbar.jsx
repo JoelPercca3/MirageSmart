@@ -12,6 +12,8 @@ import {
   Package,
   LogOut,
   ChevronRight,
+  Clock,
+  Trash2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import useAuthStore from "../../store/useAuthStore.js";
@@ -23,7 +25,37 @@ import { productAPI } from "../../api/product.api.js";
 import logo from "../../assets/logoOficial.png";
 import NotificationBell from "../ui/NotificationBell.jsx";
 
+// ─── Constantes ───────────────────────────────────────────────────────────────
+const RECENT_KEY = "mm_recent_searches";
+const MAX_RECENT = 6;
 
+// ─── Helper: búsquedas recientes ─────────────────────────────────────────────
+function getRecentSearches() {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentSearch(term) {
+  if (!term?.trim()) return;
+  const clean = term.trim();
+  const prev = getRecentSearches().filter((s) => s.toLowerCase() !== clean.toLowerCase());
+  const next = [clean, ...prev].slice(0, MAX_RECENT);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+}
+
+function removeRecentSearch(term) {
+  const next = getRecentSearches().filter((s) => s !== term);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+}
+
+function clearRecentSearches() {
+  localStorage.removeItem(RECENT_KEY);
+}
+
+// ─── Componente ──────────────────────────────────────────────────────────────
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [searchInput, setSearchInput] = useState("");
@@ -39,6 +71,9 @@ export default function Navbar() {
   const [isNavbarVisible, setIsNavbarVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
+  // Búsquedas recientes
+  const [recentSearches, setRecentSearches] = useState([]);
+
   const searchRef = useRef(null);
   const searchTimer = useRef(null);
   const userMenuRef = useRef(null);
@@ -53,7 +88,7 @@ export default function Navbar() {
   const logout = useLogout();
   const navigate = useNavigate();
 
-  // Efecto para ocultar navbar al hacer scroll
+  // ── Scroll hide/show ──────────────────────────────────────────────────────
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -68,8 +103,7 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  // Efecto para compact mode en product detail
-  // Efecto para compact mode en product detail y products page
+  // ── Compact mode ──────────────────────────────────────────────────────────
   useEffect(() => {
     const isProductPage = location.pathname.includes("/products/");
     const isProductsPage = location.pathname === "/products";
@@ -77,35 +111,31 @@ export default function Navbar() {
     setScrolled(window.scrollY > 20);
   }, [location.pathname]);
 
-  // Obtener categorías
+  // ── Categorías ────────────────────────────────────────────────────────────
   const { data: rawCategories } = useQuery({
     queryKey: ["categories"],
     queryFn: categoryAPI.getAll,
     select: (res) => res.data || [],
   });
 
-  // Procesar categorías
   useEffect(() => {
-    if (rawCategories && rawCategories.length > 0) {
-      const mainCategories = rawCategories.filter((cat) => !cat.parent_id);
-      const categoriesWithChildren = mainCategories.map((mainCat) => ({
-        ...mainCat,
-        subcategorias: rawCategories.filter(
-          (sub) => sub.parent_id === mainCat.id
-        ),
-      }));
-      setCategoriesWithSub(categoriesWithChildren.slice(0, 7));
+    if (rawCategories?.length > 0) {
+      const main = rawCategories.filter((cat) => !cat.parent_id);
+      setCategoriesWithSub(
+        main
+          .map((c) => ({ ...c, subcategorias: rawCategories.filter((s) => s.parent_id === c.id) }))
+          .slice(0, 7)
+      );
     }
   }, [rawCategories]);
 
-  // ─── Helpers para cerrar todo de golpe ───────────────────────────────────
+  // ── Helpers categorías ────────────────────────────────────────────────────
   const closeCompactMenu = () => {
     clearTimeout(categoryTimeoutRef.current);
     setShowCompactCategories(false);
     setActiveCategory(null);
   };
 
-  // ─── Categorías normales (modo no-compacto) ───────────────────────────────
   const handleCategoryMouseEnter = (category) => {
     if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
     setActiveCategory(category);
@@ -123,25 +153,16 @@ export default function Navbar() {
     categoryTimeoutRef.current = setTimeout(() => setActiveCategory(null), 150);
   };
 
-  // ─── Menú compacto ────────────────────────────────────────────────────────
-  // El contenedor padre (div ref={compactMenuRef}) maneja enter/leave global.
-  // El mega menú fixed NO tiene sus propios handlers — el overlay negro
-  // se encarga de cerrarlo cuando el cursor llega a la página.
   const handleCompactMenuMouseEnter = () => {
     if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
     setShowCompactCategories(true);
   };
 
-  // Este leave solo se dispara si el cursor sale del botón SIN entrar
-  // al mega menú (porque el mega menú es fixed y está fuera del DOM del div).
-  // El overlay negro cubre el resto → al llegar ahí se cierra todo.
   const handleCompactMenuMouseLeave = () => {
-    categoryTimeoutRef.current = setTimeout(() => {
-      closeCompactMenu();
-    }, 150);
+    categoryTimeoutRef.current = setTimeout(closeCompactMenu, 150);
   };
 
-  // Cerrar menús al cambiar de ruta
+  // ── Cerrar al cambiar ruta ─────────────────────────────────────────────────
   useEffect(() => {
     closeMobileMenu();
     setShowSearch(false);
@@ -151,10 +172,10 @@ export default function Navbar() {
     setShowCompactCategories(false);
   }, [location.pathname]);
 
-  // Cerrar búsqueda al hacer clic fuera
+  // ── Cerrar buscador al clic fuera ─────────────────────────────────────────
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
         setIsSearchActive(false);
         setShowSearch(false);
       }
@@ -165,7 +186,7 @@ export default function Navbar() {
     }
   }, [isSearchActive]);
 
-  // Búsqueda en tiempo real
+  // ── Búsqueda en tiempo real ───────────────────────────────────────────────
   useEffect(() => {
     if (!searchInput.trim() || searchInput.length < 2) {
       setSearchResults([]);
@@ -186,18 +207,26 @@ export default function Navbar() {
     return () => clearTimeout(searchTimer.current);
   }, [searchInput]);
 
+  // ── Acciones de búsqueda ──────────────────────────────────────────────────
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchInput.trim()) {
-      navigate(`/products?q=${encodeURIComponent(searchInput.trim())}`);
-      setSearchInput("");
-      setSearchResults([]);
-      setShowSearch(false);
-      setIsSearchActive(false);
-    }
+    const q = searchInput.trim();
+    if (!q) return;
+    saveRecentSearch(q);
+    setRecentSearches(getRecentSearches());
+    navigate(`/products?q=${encodeURIComponent(q)}`);
+    setSearchInput("");
+    setSearchResults([]);
+    setShowSearch(false);
+    setIsSearchActive(false);
   };
 
   const handleResultClick = (id) => {
+    // Guardamos la query que produjo ese resultado
+    if (searchInput.trim()) {
+      saveRecentSearch(searchInput.trim());
+      setRecentSearches(getRecentSearches());
+    }
     navigate(`/products/${id}`);
     setSearchInput("");
     setSearchResults([]);
@@ -205,7 +234,29 @@ export default function Navbar() {
     setIsSearchActive(false);
   };
 
+  const handleRecentClick = (term) => {
+    saveRecentSearch(term); // la sube al tope
+    setRecentSearches(getRecentSearches());
+    navigate(`/products?q=${encodeURIComponent(term)}`);
+    setSearchInput("");
+    setShowSearch(false);
+    setIsSearchActive(false);
+  };
+
+  const handleRemoveRecent = (e, term) => {
+    e.stopPropagation();
+    removeRecentSearch(term);
+    setRecentSearches(getRecentSearches());
+  };
+
+  const handleClearAll = (e) => {
+    e.stopPropagation();
+    clearRecentSearches();
+    setRecentSearches([]);
+  };
+
   const handleSearchFocus = () => {
+    setRecentSearches(getRecentSearches()); // refrescar al abrir
     setIsSearchActive(true);
     setShowSearch(true);
     setShowUser(false);
@@ -217,6 +268,13 @@ export default function Navbar() {
     setIsSearchActive(false);
     setShowSearch(false);
   };
+
+  // ── Dropdown del buscador: qué mostrar ───────────────────────────────────
+  // Caso A: escribiendo ≥2 chars → resultados de API  (como antes)
+  // Caso B: input vacío o <2 chars + activo → búsquedas recientes
+  const showDropdown = (showSearch || isSearchActive);
+  const showRecents = showDropdown && searchInput.length < 2 && recentSearches.length > 0;
+  const showResults = showDropdown && searchInput.length >= 2;
 
   return (
     <>
@@ -247,7 +305,6 @@ export default function Navbar() {
       </AnimatePresence>
 
       {/* ── Overlay: categorías ───────────────────────────────────────────── */}
-      {/* onMouseEnter cierra el menú en cuanto el cursor llega a la página    */}
       <AnimatePresence>
         {(activeCategory || showCompactCategories) && (
           <motion.div
@@ -313,7 +370,6 @@ export default function Navbar() {
                 />
               </button>
 
-              {/* Mega menú compacto — fixed, fuera del flujo del div padre */}
               <AnimatePresence>
                 {showCompactCategories && categoriesWithSub.length > 0 && (
                   <motion.div
@@ -322,35 +378,25 @@ export default function Navbar() {
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
                     className="fixed left-0 right-0 top-[106px] bg-white shadow-2xl z-50 border-t border-gray-100"
-                  // Sin handlers propios: el overlay negro cierra al salir
                   >
                     <div className="max-w-7xl mx-auto px-4">
                       <div className="flex max-h-[500px]">
-
-                        {/* Columna izquierda */}
                         <div className="w-64 bg-gray-50 rounded-l-xl overflow-y-auto border-r border-gray-100">
                           {categoriesWithSub.map((cat) => (
                             <div
                               key={cat.id}
-                              className={`
-                                flex items-center justify-between px-4 py-3 cursor-pointer
-                                transition-all duration-150 border-r-2
-                                ${activeCategory?.id === cat.id
+                              className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all duration-150 border-r-2 ${activeCategory?.id === cat.id
                                   ? "bg-white text-orange-500 border-orange-500"
                                   : "text-gray-600 border-transparent"
-                                }
-                              `}
+                                }`}
                               onMouseEnter={() => handleCategoryMouseEnter(cat)}
                             >
-                              <span className="text-sm font-medium">
-                                {cat.nombre}
-                              </span>
+                              <span className="text-sm font-medium">{cat.nombre}</span>
                               <ChevronRight size={14} className="text-gray-400" />
                             </div>
                           ))}
                         </div>
 
-                        {/* Columna derecha */}
                         <div className="flex-1 bg-white rounded-r-xl overflow-y-auto p-4">
                           {activeCategory ? (
                             <>
@@ -360,9 +406,7 @@ export default function Navbar() {
                                   {activeCategory.nombre}
                                 </h6>
                               </div>
-
                               <div className="flex flex-wrap gap-3">
-                                {/* Ver todo */}
                                 <Link
                                   to={`/category/${activeCategory.id}`}
                                   className="flex flex-col items-center text-center group"
@@ -377,41 +421,34 @@ export default function Navbar() {
                                         className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform"
                                       />
                                     ) : (
-                                      <span className="text-[10px] text-gray-400 font-medium">
-                                        TODO
-                                      </span>
+                                      <span className="text-[10px] text-gray-400 font-medium">TODO</span>
                                     )}
                                   </div>
                                   <span className="mt-2 text-[11px] text-gray-500 group-hover:text-orange-500 leading-tight">
                                     Ver todo
                                   </span>
                                 </Link>
-
-                                {/* Subcategorías */}
-                                {activeCategory.subcategorias
-                                  ?.slice(0, 14)
-                                  .map((sub) => (
-                                    <Link
-                                      key={sub.id}
-                                      to={`/category/${sub.id}`}
-                                      className="flex flex-col items-center text-center group"
-                                      style={{ width: "84px" }}
-                                      onClick={closeCompactMenu}
-                                    >
-                                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
-                                        <img
-                                          src={sub.imagen_url}
-                                          alt={sub.nombre}
-                                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                                        />
-                                      </div>
-                                      <span className="mt-2 text-[11px] text-gray-600 group-hover:text-black leading-tight w-full text-center line-clamp-3 break-words hyphens-auto">
-                                        {sub.nombre}
-                                      </span>
-                                    </Link>
-                                  ))}
+                                {activeCategory.subcategorias?.slice(0, 14).map((sub) => (
+                                  <Link
+                                    key={sub.id}
+                                    to={`/category/${sub.id}`}
+                                    className="flex flex-col items-center text-center group"
+                                    style={{ width: "84px" }}
+                                    onClick={closeCompactMenu}
+                                  >
+                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
+                                      <img
+                                        src={sub.imagen_url}
+                                        alt={sub.nombre}
+                                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                      />
+                                    </div>
+                                    <span className="mt-2 text-[11px] text-gray-600 group-hover:text-black leading-tight w-full text-center line-clamp-3 break-words hyphens-auto">
+                                      {sub.nombre}
+                                    </span>
+                                  </Link>
+                                ))}
                               </div>
-
                               {activeCategory.subcategorias?.length > 15 && (
                                 <div className="mt-4 pt-2 text-center">
                                   <Link
@@ -446,10 +483,10 @@ export default function Navbar() {
             <form onSubmit={handleSearch} className="relative">
               <div
                 className={`flex border-2 rounded-xl overflow-hidden transition-all duration-300 ${isSearchActive
-                  ? "border-red-500 shadow-lg shadow-red-200 ring-2 ring-red-200"
-                  : showSearch
-                    ? "border-red-400 shadow-lg shadow-red-100"
-                    : "border-gray-200"
+                    ? "border-red-500 shadow-lg shadow-red-200 ring-2 ring-red-200"
+                    : showSearch
+                      ? "border-red-400 shadow-lg shadow-red-100"
+                      : "border-gray-200"
                   } ${isSearchActive ? "relative z-50 bg-white" : ""}`}
               >
                 <input
@@ -469,9 +506,7 @@ export default function Navbar() {
                 >
                   <Search size={16} />
                   {!isCompact && (
-                    <span className="text-sm font-medium hidden lg:block">
-                      Buscar
-                    </span>
+                    <span className="text-sm font-medium hidden lg:block">Buscar</span>
                   )}
                 </button>
               </div>
@@ -488,83 +523,131 @@ export default function Navbar() {
                 </motion.button>
               )}
 
-              {/* Resultados de búsqueda */}
+              {/* ── Dropdown unificado ──────────────────────────────────── */}
               <AnimatePresence>
-                {(showSearch || isSearchActive) && searchInput.length >= 2 && (
+                {(showRecents || showResults) && (
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
                     className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50"
                   >
-                    {searching ? (
-                      <div className="p-4 text-center text-sm text-gray-400">
-                        <div className="animate-spin inline-block w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full mr-2" />
-                        Buscando...
-                      </div>
-                    ) : searchResults.length > 0 ? (
+
+                    {/* ── CASO A: Búsquedas recientes ── */}
+                    {showRecents && (
                       <>
-                        {searchResults.map((product) => (
+                        {/* Cabecera */}
+                        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Búsquedas recientes
+                          </span>
                           <button
-                            key={product.id}
-                            onMouseDown={() => handleResultClick(product.id)}
-                            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
+                            onMouseDown={handleClearAll}
+                            className="text-xs text-red-400 hover:text-red-600 transition font-medium"
                           >
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                              {(() => {
-                                // ✅ Obtener la imagen correcta
-                                let imageUrl = null;
-                                if (product.images && product.images.length > 0) {
-                                  const baseImage = product.images.find(img => !img.variant_id);
-                                  imageUrl = baseImage?.url || product.images[0]?.url;
-                                }
-                                if (!imageUrl && product.imagen_principal) {
-                                  imageUrl = product.imagen_principal;
-                                }
-                                return imageUrl ? (
-                                  <img
-                                    src={imageUrl}
-                                    alt={product.nombre}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <Package size={16} className="text-gray-300" />
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-800 truncate">
-                                {product.nombre}
-                              </p>
-                              <p className="text-xs text-red-500 font-bold">
-                                {/* ✅ Calcular precio correctamente */}
-                                {(() => {
-                                  const precio = product.precio_oferta || product.precio_base;
-                                  return precio ? `S/ ${Number(precio).toFixed(2)}` : "Precio no disponible";
-                                })()}
-                              </p>
-                            </div>
+                            Borrar todo
+                          </button>
+                        </div>
+
+                        {/* Lista */}
+                        {recentSearches.map((term) => (
+                          <button
+                            key={term}
+                            onMouseDown={() => handleRecentClick(term)}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition text-left group"
+                          >
+                            <Clock size={14} className="text-gray-300 flex-shrink-0" />
+                            <span className="flex-1 text-sm text-gray-700 truncate">{term}</span>
+                            <span
+                              role="button"
+                              onMouseDown={(e) => handleRemoveRecent(e, term)}
+                              className="opacity-0 group-hover:opacity-100 transition p-1 hover:bg-gray-200 rounded-full"
+                              aria-label={`Eliminar búsqueda "${term}"`}
+                            >
+                              <X size={12} className="text-gray-400" />
+                            </span>
                           </button>
                         ))}
-                        <button
-                          onMouseDown={() => {
-                            navigate(
-                              `/products?q=${encodeURIComponent(searchInput)}`
-                            );
-                            handleSearchClose();
-                          }}
-                          className="w-full px-4 py-3 text-sm text-red-500 font-medium hover:bg-red-50 transition text-center border-t border-gray-100"
-                        >
-                          Ver todos los resultados para "{searchInput}" →
-                        </button>
+
+                        {/* Sugerencia de búsqueda libre */}
+                        <div className="px-4 py-3 border-t border-gray-100 text-xs text-gray-400 text-center">
+                          Escribe para buscar productos
+                        </div>
                       </>
-                    ) : (
-                      <div className="p-4 text-center text-sm text-gray-400">
-                        No se encontraron productos para "{searchInput}"
-                      </div>
                     )}
+
+                    {/* ── CASO B: Resultados de API ── */}
+                    {showResults && (
+                      <>
+                        {searching ? (
+                          <div className="p-4 text-center text-sm text-gray-400">
+                            <div className="animate-spin inline-block w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full mr-2" />
+                            Buscando...
+                          </div>
+                        ) : searchResults.length > 0 ? (
+                          <>
+                            {searchResults.map((product) => (
+                              <button
+                                key={product.id}
+                                onMouseDown={() => handleResultClick(product.id)}
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
+                              >
+                                <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                  {(() => {
+                                    let imageUrl = null;
+                                    if (product.images?.length > 0) {
+                                      const base = product.images.find((img) => !img.variant_id);
+                                      imageUrl = base?.url || product.images[0]?.url;
+                                    }
+                                    if (!imageUrl && product.imagen_principal) {
+                                      imageUrl = product.imagen_principal;
+                                    }
+                                    return imageUrl ? (
+                                      <img
+                                        src={imageUrl}
+                                        alt={product.nombre}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <Package size={16} className="text-gray-300" />
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-800 truncate">
+                                    {product.nombre}
+                                  </p>
+                                  <p className="text-xs text-red-500 font-bold">
+                                    {(() => {
+                                      const precio = product.precio_oferta || product.precio_base;
+                                      return precio
+                                        ? `S/ ${Number(precio).toFixed(2)}`
+                                        : "Precio no disponible";
+                                    })()}
+                                  </p>
+                                </div>
+                              </button>
+                            ))}
+                            <button
+                              onMouseDown={() => {
+                                navigate(`/products?q=${encodeURIComponent(searchInput)}`);
+                                handleSearchClose();
+                              }}
+                              className="w-full px-4 py-3 text-sm text-red-500 font-medium hover:bg-red-50 transition text-center border-t border-gray-100"
+                            >
+                              Ver todos los resultados para "{searchInput}" →
+                            </button>
+                          </>
+                        ) : (
+                          <div className="p-4 text-center text-sm text-gray-400">
+                            No se encontraron productos para "{searchInput}"
+                          </div>
+                        )}
+                      </>
+                    )}
+
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -573,7 +656,7 @@ export default function Navbar() {
 
           {/* ── Iconos derecha ────────────────────────────────────────────── */}
           <div className="flex items-center gap-1 ml-auto">
-            {user && <NotificationBell />}  {/* ← AGREGAR */}
+            {user && <NotificationBell />}
 
             {/* Carrito */}
             <motion.button
@@ -605,10 +688,7 @@ export default function Navbar() {
                   whileTap={{ scale: 0.9 }}
                   whileHover={{ scale: 1.1 }}
                 >
-                  <Heart
-                    size={22}
-                    className="text-gray-700 hover:text-red-500 transition"
-                  />
+                  <Heart size={22} className="text-gray-700 hover:text-red-500 transition" />
                 </motion.div>
               </Link>
             )}
@@ -650,10 +730,7 @@ export default function Navbar() {
                     <span className="hidden md:block text-sm font-medium text-gray-700 max-w-[80px] truncate">
                       {user.nombre.split(" ")[0]}
                     </span>
-                    <ChevronDown
-                      size={14}
-                      className="text-gray-500 hidden md:block"
-                    />
+                    <ChevronDown size={14} className="text-gray-500 hidden md:block" />
                   </>
                 )}
               </motion.button>
@@ -683,12 +760,8 @@ export default function Navbar() {
                               </div>
                             )}
                             <div>
-                              <p className="text-sm font-semibold text-gray-800 truncate">
-                                {user.nombre}
-                              </p>
-                              <p className="text-xs text-gray-500 truncate">
-                                {user.email}
-                              </p>
+                              <p className="text-sm font-semibold text-gray-800 truncate">{user.nombre}</p>
+                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
                             </div>
                           </div>
                         </div>
@@ -709,10 +782,7 @@ export default function Navbar() {
                         ))}
                         <hr className="my-1 border-gray-100" />
                         <button
-                          onClick={() => {
-                            logout();
-                            setShowUser(false);
-                          }}
+                          onClick={() => { logout(); setShowUser(false); }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
                         >
                           <LogOut size={15} />
@@ -722,9 +792,7 @@ export default function Navbar() {
                     ) : (
                       <>
                         <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm text-gray-500">
-                            ¡Hola! Inicia sesión
-                          </p>
+                          <p className="text-sm text-gray-500">¡Hola! Inicia sesión</p>
                         </div>
                         <Link
                           to="/login"
@@ -756,21 +824,11 @@ export default function Navbar() {
             >
               <AnimatePresence mode="wait">
                 {isMobileMenuOpen ? (
-                  <motion.div
-                    key="x"
-                    initial={{ rotate: -90 }}
-                    animate={{ rotate: 0 }}
-                    exit={{ rotate: 90 }}
-                  >
+                  <motion.div key="x" initial={{ rotate: -90 }} animate={{ rotate: 0 }} exit={{ rotate: 90 }}>
                     <X size={22} />
                   </motion.div>
                 ) : (
-                  <motion.div
-                    key="menu"
-                    initial={{ rotate: 90 }}
-                    animate={{ rotate: 0 }}
-                    exit={{ rotate: -90 }}
-                  >
+                  <motion.div key="menu" initial={{ rotate: 90 }} animate={{ rotate: 0 }} exit={{ rotate: -90 }}>
                     <Menu size={22} />
                   </motion.div>
                 )}
@@ -781,17 +839,14 @@ export default function Navbar() {
 
         {/* ── Categorías desktop (modo normal) ──────────────────────────── */}
         {!isCompact && categoriesWithSub?.length > 0 && (
-          <div
-            className="hidden sm:block border-t border-gray-100 relative"
-            ref={categoryMenuRef}
-          >
+          <div className="hidden sm:block border-t border-gray-100 relative" ref={categoryMenuRef}>
             <div className="max-w-7xl mx-auto px-4">
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5">
                 <Link
                   to="/products"
                   className={`text-sm px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition ${location.pathname === "/products" && !location.search
-                    ? "bg-red-50 text-red-500"
-                    : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
+                      ? "bg-red-50 text-red-500"
+                      : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
                     }`}
                   onMouseEnter={() => setActiveCategory(null)}
                 >
@@ -807,8 +862,8 @@ export default function Navbar() {
                     <Link
                       to={`/category/${cat.id}`}
                       className={`text-sm px-3 py-1.5 rounded-lg whitespace-nowrap transition inline-flex items-center gap-1 ${location.pathname === `/category/${cat.id}`
-                        ? "bg-red-50 text-red-500 font-medium"
-                        : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
+                          ? "bg-red-50 text-red-500 font-medium"
+                          : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
                         }`}
                     >
                       {cat.nombre}
@@ -821,7 +876,6 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Mega menú normal */}
             <AnimatePresence>
               {activeCategory && activeCategory.subcategorias?.length > 0 && (
                 <motion.div
@@ -849,16 +903,8 @@ export default function Navbar() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <svg
-                                  className="w-8 h-8 text-gray-300"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={1}
+                                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
                                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                                   />
                                 </svg>
@@ -895,10 +941,7 @@ export default function Navbar() {
                   placeholder="Buscar productos..."
                   className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-red-400"
                 />
-                <button
-                  type="submit"
-                  className="bg-red-500 text-white px-4 rounded-xl"
-                >
+                <button type="submit" className="bg-red-500 text-white px-4 rounded-xl">
                   <Search size={16} />
                 </button>
               </form>
@@ -939,32 +982,11 @@ export default function Navbar() {
 
               {user && (
                 <div className="border-t border-gray-100 px-4 py-3 flex flex-col gap-1">
-                  <Link
-                    to="/profile"
-                    onClick={closeMobileMenu}
-                    className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
-                  >
-                    👤 Mi perfil
-                  </Link>
-                  <Link
-                    to="/orders"
-                    onClick={closeMobileMenu}
-                    className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
-                  >
-                    📦 Mis pedidos
-                  </Link>
-                  <Link
-                    to="/wishlist"
-                    onClick={closeMobileMenu}
-                    className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
-                  >
-                    ❤️ Favoritos
-                  </Link>
+                  <Link to="/profile" onClick={closeMobileMenu} className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl">👤 Mi perfil</Link>
+                  <Link to="/orders" onClick={closeMobileMenu} className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl">📦 Mis pedidos</Link>
+                  <Link to="/wishlist" onClick={closeMobileMenu} className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl">❤️ Favoritos</Link>
                   <button
-                    onClick={() => {
-                      logout();
-                      closeMobileMenu();
-                    }}
+                    onClick={() => { logout(); closeMobileMenu(); }}
                     className="py-2 px-3 text-sm text-red-500 hover:bg-red-50 rounded-xl text-left"
                   >
                     🚪 Cerrar sesión

@@ -28,6 +28,8 @@ import ProductZoom from "../components/ui/ProductZoom";
 import ProductCard from "../components/product/ProductCard.jsx";
 import Button from "../components/ui/Button.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
+import ReviewsModal from "../components/review/ReviewsModal.jsx";
+import ReviewDetailModal from "../components/review/ReviewDetailModal.jsx";
 
 import { formatPrice } from "../utils/formatPrice.js";
 import { timeAgo } from "../utils/formatDate.js";
@@ -71,7 +73,6 @@ const GUARANTEES = [
 
 // ─── Utilidades ───────────────────────────────────────────────────────────────
 
-/** Construye URL de Cloudinary con transformación según tamaño */
 export function getImageUrl(url, size = "medium") {
   if (!url) return PLACEHOLDER_IMAGE;
   if (!url.includes("cloudinary")) {
@@ -83,14 +84,12 @@ export function getImageUrl(url, size = "medium") {
   return `${url.substring(0, uploadIndex + 8)}${transform}/${url.substring(uploadIndex + 8)}`;
 }
 
-/** Parsea `opciones` de variante de forma segura */
 function parseOpts(raw) {
   if (!raw) return {};
   if (typeof raw === "object") return raw;
   try { return JSON.parse(raw); } catch { return {}; }
 }
 
-/** Calcula el precio final con variante */
 function calcPrecio(product, variant) {
   const base = product.precio_oferta != null && product.precio_oferta !== ""
     ? Number(product.precio_oferta)
@@ -98,7 +97,6 @@ function calcPrecio(product, variant) {
   return base + Number(variant?.precio_extra ?? 0);
 }
 
-/** Stock máximo disponible para la selección actual */
 function calcMaxStock(product, variant) {
   if (product.variants?.length > 0) return variant?.stock ?? 0;
   return product.stock_total ?? 99;
@@ -204,12 +202,9 @@ function QuantitySelector({ value, max, onChange }) {
   );
 }
 
-// Reemplaza solo el componente ReviewCard en ProductDetailPage.jsx
-
-function ReviewCard({ rev }) {
+function ReviewCard({ rev, onClick }) {
   const images = useMemo(() => {
     if (!rev.imagenes) return [];
-    // El backend ya parsea a array, pero por si acaso manejamos ambos casos
     const arr = Array.isArray(rev.imagenes)
       ? rev.imagenes
       : (() => {
@@ -219,7 +214,10 @@ function ReviewCard({ rev }) {
   }, [rev.imagenes]);
 
   return (
-    <div className="pb-2 border-b border-gray-300">
+    <div
+      className="pb-2 border-b border-gray-300 cursor-pointer hover:bg-gray-50/50 transition-colors rounded-lg -mx-2 px-2 py-1"
+      onClick={onClick}
+    >
       <div className="flex items-center gap-3 mb-3">
         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium text-gray-700" aria-hidden="true">
           {rev.autor?.[0]?.toUpperCase()}
@@ -251,6 +249,7 @@ function ReviewCard({ rev }) {
     </div>
   );
 }
+
 // ─── Sección: Variantes ───────────────────────────────────────────────────────
 
 function TallaSelector({ variants, selectedVariant, onSelect }) {
@@ -280,7 +279,6 @@ function TallaSelector({ variants, selectedVariant, onSelect }) {
               disabled={!hasStock}
               aria-pressed={isSelected}
               onClick={() => {
-                // Preferir misma combinación Color + nueva Talla
                 const next =
                   (selectedOpts.Color
                     ? matching.find((v) => parseOpts(v.opciones).Color === selectedOpts.Color && v.stock > 0)
@@ -307,7 +305,6 @@ function ColorSelector({ variants, selectedVariant, images, onSelect }) {
     ...new Set(variants.map((v) => parseOpts(v.opciones).Color).filter(Boolean)),
   ], [variants]);
 
-  // Mapa color → URL de imagen de swatch (calculado una sola vez)
   const swatchImageMap = useMemo(() => {
     const map = {};
     for (const color of colores) {
@@ -370,7 +367,6 @@ function ColorSelector({ variants, selectedVariant, images, onSelect }) {
                     <div className="w-full h-full" style={{ backgroundColor: hexColor }} />
                   )}
                 </div>
-                {/* Tooltip */}
                 <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                   {color}
                 </span>
@@ -442,6 +438,10 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState("descripcion");
   const [addedToCart, setAddedToCart] = useState(false);
 
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [showReviewDetail, setShowReviewDetail] = useState(false);
+  const [selectedReview, setSelectedReview] = useState(null);
+
   const reviewsRef = useRef(null);
   const token = useAuthStore((s) => s.token);
 
@@ -459,30 +459,36 @@ export default function ProductDetailPage() {
     enabled: !!product?.category_id,
   });
 
-  // ── Inicializar imágenes y variante por defecto ──
   useEffect(() => {
     if (!product) return;
-
     const baseImages = product.images?.filter((img) => !img.variant_id) ?? [];
     setDisplayImages(baseImages.length ? baseImages : product.images ?? []);
-
     if (product.variants?.length > 0 && !selectedVariant) {
       setSelectedVariant(product.variants[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
 
-  // ── Cambio de variante ──
   const handleVariantChange = useCallback((variant) => {
     setSelectedVariant(variant);
-    setQuantity(1); // reset cantidad al cambiar variante
-
+    setQuantity(1);
     const variantImages = product?.images?.filter((img) => img.variant_id === variant.id) ?? [];
     const baseImages = product?.images?.filter((img) => !img.variant_id) ?? [];
     setDisplayImages(variantImages.length ? variantImages : baseImages);
   }, [product]);
 
-  // ── Métricas derivadas (sin recalcular en cada render) ──
+  const openReviewsModal = useCallback(() => setShowReviewsModal(true), []);
+  const closeReviewsModal = useCallback(() => setShowReviewsModal(false), []);
+  const openReviewDetail = useCallback((review) => {
+    setSelectedReview(review);
+    setShowReviewDetail(true);
+  }, []);
+  const closeReviewDetail = useCallback(() => {
+    setShowReviewDetail(false);
+    setSelectedReview(null);
+  }, []);
+  const handleReviewChange = useCallback((review) => setSelectedReview(review), []);
+
   const precio = useMemo(() => calcPrecio(product ?? {}, selectedVariant), [product, selectedVariant]);
   const precioBase = product?.precio_base ?? 0;
   const descuento = product?.precio_oferta && precioBase > product.precio_oferta
@@ -492,10 +498,6 @@ export default function ProductDetailPage() {
   const hasVariants = (product?.variants?.length ?? 0) > 0;
   const outOfStock = hasVariants ? selectedVariant?.stock === 0 : product?.stock_total === 0;
   const noVariantChosen = hasVariants && !selectedVariant;
-
-  const scrollToReviews = useCallback(() => {
-    reviewsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   const handleAddToCart = useCallback(() => {
     if (noVariantChosen) {
@@ -527,7 +529,6 @@ export default function ProductDetailPage() {
     toggleWish.mutate(product.id);
   }, [token, toggleWish, product]);
 
-  // ── Estados de carga ──
   if (isLoading) {
     return <div className="text-center py-20"><Spinner /></div>;
   }
@@ -541,6 +542,7 @@ export default function ProductDetailPage() {
   }
 
   const reviews = reviewsData?.data ?? [];
+  const productImage = product.images?.[0]?.url || "";
 
   return (
     <>
@@ -583,22 +585,130 @@ export default function ProductDetailPage() {
           </span>
         </nav>
 
-        {/* ── Grid principal ── */}
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+        {/* ── Grid principal con sticky ── */}
+        {/*
+          CLAVE DEL STICKY:
+          - El wrapper flex tiene `items-start` — sin esto flex estira ambas
+            columnas a la misma altura y el sticky no funciona.
+          - La columna izquierda contiene imágenes + tabs + reseñas. Su altura
+            total define hasta dónde llega el sticky de la derecha.
+          - La columna derecha tiene `sticky top-[72px] self-start`. El `top`
+            debe ser la altura de tu navbar. Ajusta si tu navbar es diferente.
+          - "Comprados juntos frecuentemente" va FUERA del flex, así el sticky
+            para justo antes de llegar a esa sección.
+        */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start">
 
-          {/* Columna imágenes */}
-          <div className="lg:w-[60.5%]">
-            <div className="sticky top-4">
-              <ProductZoom
-                images={displayImages.length > 0 ? displayImages : product.images?.filter((img) => !img.variant_id) ?? []}
-                getImageUrl={getImageUrl}
-                productName={product.nombre}
-              />
+          {/* ── Columna IZQUIERDA: imágenes + tabs + reseñas ── */}
+          <div className="w-full lg:w-[58%] min-w-0">
+
+            {/* Galería */}
+            <ProductZoom
+              images={displayImages.length > 0 ? displayImages : product.images?.filter((img) => !img.variant_id) ?? []}
+              getImageUrl={getImageUrl}
+              productName={product.nombre}
+            />
+
+            {/* ── Tabs de información (desktop) ── */}
+            <div className="mt-10 pt-6 border-t border-gray-100">
+              <div className="hidden md:block">
+                <div className="flex border-b border-gray-200 gap-8" role="tablist">
+                  {TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      role="tab"
+                      aria-selected={activeTab === tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`pb-3 text-sm font-medium transition ${activeTab === tab.id
+                          ? "border-b-2 border-gray-800 text-gray-900"
+                          : "text-gray-500 hover:text-gray-700"
+                        }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+                <div role="tabpanel" className="pt-6">
+                  {activeTab === "descripcion" && (
+                    <div className="prose max-w-none text-gray-600 text-sm leading-relaxed">
+                      {product.descripcion ?? <p className="text-gray-400">No hay descripción disponible.</p>}
+                    </div>
+                  )}
+                  {activeTab === "especificaciones" && <AtributosGrid atributos={product.atributos} />}
+                  {activeTab === "politicas" && <PoliticasContent />}
+                </div>
+              </div>
+
+              {/* Accordions (mobile) */}
+              <div className="block md:hidden">
+                <Accordion title="Información adicional">
+                  {product.descripcion ?? "No hay descripción disponible."}
+                </Accordion>
+                {product.atributos?.length > 0 && (
+                  <Accordion title="Especificaciones técnicas">
+                    <div className="space-y-2">
+                      {product.atributos.map((attr, i) => (
+                        <div key={i} className="flex text-sm py-1">
+                          <span className="text-gray-500 w-32 capitalize">{attr.atributo}:</span>
+                          <span className="text-gray-700">{attr.valor}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Accordion>
+                )}
+                <Accordion title="Satisfacción garantizada"><PoliticasContent /></Accordion>
+              </div>
             </div>
-          </div>
 
-          {/* Columna información */}
-          <div className="lg:w-1/2">
+            {/* ── Reseñas ── */}
+            <div ref={reviewsRef} className="mt-10 pt-6 border-t border-gray-100 scroll-mt-20">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-gray-800">Opiniones de clientes</h2>
+                {reviews.length > 0 && (
+                  <button
+                    onClick={openReviewsModal}
+                    className="text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1"
+                  >
+                    Ver todas <ChevronRight size={16} />
+                  </button>
+                )}
+              </div>
+
+              {reviews.length > 0 ? (
+                <>
+                  <div className="space-y-5">
+                    {reviews.slice(0, 3).map((rev) => (
+                      <ReviewCard
+                        key={rev.id}
+                        rev={rev}
+                        onClick={() => openReviewDetail(rev)}
+                      />
+                    ))}
+                  </div>
+                  {reviews.length > 3 && (
+                    <button
+                      onClick={openReviewsModal}
+                      className="mt-4 text-sm text-gray-700 hover:text-gray-900 font-medium underline transition-colors"
+                    >
+                      Ver todas las reseñas ({reviews.length})
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className="text-gray-400">No hay reseñas aún. ¡Sé el primero en opinar!</p>
+              )}
+            </div>
+
+          </div>
+          {/* fin columna izquierda */}
+
+          {/* ── Columna DERECHA: sticky ── */}
+          {/*
+            `sticky top-[72px]` — cambia 72 por la altura real de tu navbar en px.
+            `self-start` — imprescindible: evita que flex estire esta columna.
+            Sin self-start el sticky nunca se activa.
+          */}
+          <div className="w-full lg:w-[42%] lg:sticky lg:top-[72px] lg:self-start shrink-0">
 
             {/* Vendedor */}
             <div className="flex items-center gap-1 mb-5">
@@ -619,7 +729,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Nombre */}
-            <h1 className="text-xl lg:text-3xl font-black text-gray-900 leading-tight mb-4">
+            <h1 className="text-xl lg:text-2xl font-black text-gray-900 leading-tight mb-4">
               {product.nombre}
             </h1>
 
@@ -628,7 +738,7 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <StarRow rating={product.rating_promedio} />
                 <button
-                  onClick={scrollToReviews}
+                  onClick={openReviewsModal}
                   className="text-xs text-gray-500 hover:text-gray-700 hover:underline transition"
                 >
                   {Number(product.rating_promedio).toFixed(1)} ({product.rating_count} reseñas)
@@ -731,83 +841,40 @@ export default function ProductDetailPage() {
 
             <p className="text-xs text-gray-400">Código: {product.sku || product.id}</p>
           </div>
+          {/* fin columna derecha */}
+
         </div>
+        {/* fin grid principal */}
 
-        {/* ── Tabs de información (desktop) ── */}
-        <div className="mt-12 pt-6 border-t border-gray-100">
-          <div className="hidden md:block">
-            <div className="flex border-b border-gray-200 gap-8" role="tablist">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  role="tab"
-                  aria-selected={activeTab === tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`pb-3 text-sm font-medium transition ${activeTab === tab.id
-                    ? "border-b-2 border-gray-800 text-gray-900"
-                    : "text-gray-500 hover:text-gray-700"
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <div role="tabpanel" className="pt-6">
-              {activeTab === "descripcion" && (
-                <div className="prose max-w-none text-gray-600 text-sm leading-relaxed">
-                  {product.descripcion ?? <p className="text-gray-400">No hay descripción disponible.</p>}
-                </div>
-              )}
-              {activeTab === "especificaciones" && <AtributosGrid atributos={product.atributos} />}
-              {activeTab === "politicas" && <PoliticasContent />}
-            </div>
-          </div>
+        {/* ── Modales ── */}
+        <ReviewsModal
+          isOpen={showReviewsModal}
+          onClose={closeReviewsModal}
+          reviews={reviews}
+          productName={product.nombre}
+          onReviewClick={openReviewDetail}
+        />
+        <ReviewDetailModal
+          isOpen={showReviewDetail}
+          onClose={closeReviewDetail}
+          review={selectedReview}
+          allReviews={reviews}
+          productName={product.nombre}
+          productPrice={precio}
+          productImage={productImage}
+          onReviewChange={handleReviewChange}
+          onAddToCart={() => {
+            handleAddToCart();
+            closeReviewDetail();
+          }}
+        />
 
-          {/* Accordions (mobile) */}
-          <div className="block md:hidden">
-            <Accordion title="Información adicional">
-              {product.descripcion ?? "No hay descripción disponible."}
-            </Accordion>
-            {product.atributos?.length > 0 && (
-              <Accordion title="Especificaciones técnicas">
-                <div className="space-y-2">
-                  {product.atributos.map((attr, i) => (
-                    <div key={i} className="flex text-sm py-1">
-                      <span className="text-gray-500 w-32 capitalize">{attr.atributo}:</span>
-                      <span className="text-gray-700">{attr.valor}</span>
-                    </div>
-                  ))}
-                </div>
-              </Accordion>
-            )}
-            <Accordion title="Satisfacción garantizada"><PoliticasContent /></Accordion>
-          </div>
-        </div>
-
-        {/* ── Reseñas ── */}
-        <div ref={reviewsRef} className="mt-12 pt-6 border-t border-gray-100 scroll-mt-20">
-          <h2 className="text-lg font-medium text-gray-800 mb-4">Opiniones de clientes</h2>
-          {reviews.length > 0 ? (
-            <>
-              <div className="space-y-5">
-                {reviews.map((rev) => <ReviewCard key={rev.id} rev={rev} />)}
-              </div>
-              {/* El scroll es decorativo aquí porque ya se muestran todas */}
-              {reviews.length > 5 && (
-                <button
-                  onClick={scrollToReviews}
-                  className="mt-4 text-sm text-gray-700 hover:text-gray-900 font-medium underline transition-colors"
-                >
-                  Ver todas las reseñas ({reviews.length})
-                </button>
-              )}
-            </>
-          ) : (
-            <p className="text-gray-400">No hay reseñas aún. ¡Sé el primero en opinar!</p>
-          )}
-        </div>
-
-        {/* ── Productos relacionados ── */}
+        {/* ── Comprados juntos / Productos relacionados ──
+            Va FUERA del flex. El sticky de la columna derecha ya paró
+            al llegar al final de la columna izquierda (reseñas), así que
+            esta sección aparece limpia debajo sin que el panel de info
+            la tape.
+        */}
         {related?.length > 0 && (
           <div className="mt-12 pt-6 border-t border-gray-100">
             <h2 className="text-lg font-medium text-gray-800 mb-5">Comprados juntos frecuentemente</h2>
@@ -818,6 +885,7 @@ export default function ProductDetailPage() {
             </div>
           </div>
         )}
+
       </div>
     </>
   );

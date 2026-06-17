@@ -75,7 +75,7 @@ function HeroBanner() {
     if (!isAutoPlaying) return;
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % SLIDES.length);
-    }, 4000);
+    }, 3000);
     return () => clearInterval(timer);
   }, [isAutoPlaying]);
 
