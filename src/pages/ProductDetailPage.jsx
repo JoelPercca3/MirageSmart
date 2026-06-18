@@ -12,10 +12,12 @@ import {
   Shield,
   RotateCcw,
   ChevronRight,
+  ChevronLeft,
   Plus,
   Minus,
   HelpCircle,
   Check,
+  X,
 } from "lucide-react";
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,11 +43,11 @@ const PLACEHOLDER_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 24 24' fill='none' stroke='%23cccccc' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'%3E%3C/circle%3E%3Cpolyline points='21 15 16 10 5 21'%3E%3C/polyline%3E%3C/svg%3E";
 
 const CLOUDINARY_TRANSFORMS = {
-  thumb: "w_200,h_200,c_limit,f_webp,q_90",
-  small: "w_400,h_400,c_limit,f_webp,q_90",
-  medium: "w_800,h_800,c_limit,f_webp,q_90",
-  large: "w_1500,h_1500,c_limit,f_webp,q_95",
-  xl: "w_2000,h_2000,c_limit,f_webp,q_95",
+  thumb: "w_300,h_400,c_limit,f_webp,q_85",
+  small: "w_450,h_600,c_limit,f_webp,q_88",
+  medium: "w_700,h_933,c_limit,f_webp,q_90",
+  large: "w_1000,h_1333,c_limit,f_webp,q_93",
+  xl: "w_1350,h_1800,c_limit,f_webp,q_95",
 };
 
 const COLOR_HEX = {
@@ -250,6 +252,131 @@ function ReviewCard({ rev, onClick }) {
   );
 }
 
+// ─── Sección: Todas las imágenes del producto ─────────────────────────────────
+// ─── Sección: Todas las imágenes del producto (VERSIÓN VERTICAL) ─────────────
+
+// ─── Sección: Todas las imágenes del producto (UNA COLUMNA) ─────────────────
+
+// ─── Sección: Todas las imágenes del producto (UNA COLUMNA) ─────────────────
+
+// ─── Sección: Todas las imágenes del producto (SIN ESPACIOS EN BLANCO) ──────
+
+function ProductImageGallery({ images, getImageUrl, productName }) {
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const validImages = useMemo(() => {
+    return images?.filter(img => img?.url) ?? [];
+  }, [images]);
+
+  // ✅ Solo mostrar si hay más de 1 imagen
+  if (validImages.length <= 1) return null;
+
+  // ✅ Estilo para ocupar todo el espacio SIN bordes blancos
+  const getImageStyle = () => {
+    return {
+      width: '100%',
+      height: 'auto',
+      objectFit: 'cover', // ← Cambiado de 'contain' a 'cover'
+      display: 'block',
+      backgroundColor: 'transparent',
+    };
+  };
+
+  return (
+    <div className="mt-10 pt-6 border-t border-gray-100">
+      <h2 className="text-lg font-medium text-gray-800 mb-4">
+        Todas las imágenes del producto
+        <span className="text-sm font-normal text-gray-400 ml-2">
+          ({validImages.length} fotos)
+        </span>
+      </h2>
+
+      {/* ── Una sola columna SIN espacio extra ── */}
+      <div className="flex flex-col gap-1"> {/* ← gap aún más reducido */}
+        {validImages.map((img, index) => (
+          <div
+            key={img.id || index}
+            className="overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
+            onClick={() => {
+              setSelectedImage(img);
+              setIsModalOpen(true);
+            }}
+          >
+            <img
+              src={getImageUrl(img.url, "xl")}
+              alt={`${productName} - imagen ${index + 1}`}
+              style={getImageStyle()}
+              loading="lazy"
+              className="w-full h-auto"
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* ── Contador de imágenes ── */}
+      <div className="text-center text-xs text-gray-400 mt-3">
+        {validImages.length} imágenes en total
+      </div>
+
+      {/* ── Modal para ver imagen en grande ── */}
+      {isModalOpen && selectedImage && (
+        <div
+          className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <button
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition z-50"
+          >
+            <X size={24} />
+          </button>
+
+          <motion.img
+            key={selectedImage.id}
+            src={getImageUrl(selectedImage.url, "xl")}
+            alt={`${productName} - ampliada`}
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Navegación */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const currentIndex = validImages.findIndex(img => img.id === selectedImage.id);
+              const prevIndex = (currentIndex - 1 + validImages.length) % validImages.length;
+              setSelectedImage(validImages[prevIndex]);
+            }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition z-50"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const currentIndex = validImages.findIndex(img => img.id === selectedImage.id);
+              const nextIndex = (currentIndex + 1) % validImages.length;
+              setSelectedImage(validImages[nextIndex]);
+            }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition z-50"
+          >
+            <ChevronRight size={24} />
+          </button>
+
+          {/* Contador */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
+            {validImages.findIndex(img => img.id === selectedImage.id) + 1} / {validImages.length}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 // ─── Sección: Variantes ───────────────────────────────────────────────────────
 
 function TallaSelector({ variants, selectedVariant, onSelect }) {
@@ -586,21 +713,10 @@ export default function ProductDetailPage() {
         </nav>
 
         {/* ── Grid principal con sticky ── */}
-        {/*
-          CLAVE DEL STICKY:
-          - El wrapper flex tiene `items-start` — sin esto flex estira ambas
-            columnas a la misma altura y el sticky no funciona.
-          - La columna izquierda contiene imágenes + tabs + reseñas. Su altura
-            total define hasta dónde llega el sticky de la derecha.
-          - La columna derecha tiene `sticky top-[72px] self-start`. El `top`
-            debe ser la altura de tu navbar. Ajusta si tu navbar es diferente.
-          - "Comprados juntos frecuentemente" va FUERA del flex, así el sticky
-            para justo antes de llegar a esa sección.
-        */}
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8 items-start">
 
           {/* ── Columna IZQUIERDA: imágenes + tabs + reseñas ── */}
-          <div className="w-full lg:w-[58%] min-w-0">
+          <div className="w-full lg:w-[45%] min-w-0">
 
             {/* Galería */}
             <ProductZoom
@@ -620,8 +736,8 @@ export default function ProductDetailPage() {
                       aria-selected={activeTab === tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={`pb-3 text-sm font-medium transition ${activeTab === tab.id
-                          ? "border-b-2 border-gray-800 text-gray-900"
-                          : "text-gray-500 hover:text-gray-700"
+                        ? "border-b-2 border-gray-800 text-gray-900"
+                        : "text-gray-500 hover:text-gray-700"
                         }`}
                     >
                       {tab.label}
@@ -699,16 +815,18 @@ export default function ProductDetailPage() {
               )}
             </div>
 
+            {/* ── ✅ NUEVO: Todas las imágenes del producto ── */}
+            <ProductImageGallery
+              images={product.images}
+              getImageUrl={getImageUrl}
+              productName={product.nombre}
+            />
+
           </div>
           {/* fin columna izquierda */}
 
           {/* ── Columna DERECHA: sticky ── */}
-          {/*
-            `sticky top-[72px]` — cambia 72 por la altura real de tu navbar en px.
-            `self-start` — imprescindible: evita que flex estire esta columna.
-            Sin self-start el sticky nunca se activa.
-          */}
-          <div className="w-full lg:w-[42%] lg:sticky lg:top-[72px] lg:self-start shrink-0">
+          <div className="w-full lg:w-[52%] lg:sticky lg:top-[72px] lg:self-start shrink-0">
 
             {/* Vendedor */}
             <div className="flex items-center gap-1 mb-5">
@@ -869,12 +987,7 @@ export default function ProductDetailPage() {
           }}
         />
 
-        {/* ── Comprados juntos / Productos relacionados ──
-            Va FUERA del flex. El sticky de la columna derecha ya paró
-            al llegar al final de la columna izquierda (reseñas), así que
-            esta sección aparece limpia debajo sin que el panel de info
-            la tape.
-        */}
+        {/* ── Comprados juntos / Productos relacionados ── */}
         {related?.length > 0 && (
           <div className="mt-12 pt-6 border-t border-gray-100">
             <h2 className="text-lg font-medium text-gray-800 mb-5">Comprados juntos frecuentemente</h2>

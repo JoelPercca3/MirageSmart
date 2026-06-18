@@ -12,7 +12,7 @@ import { ZoomIn, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 // ─── Utilidades ──────────────────────────────────────────────────────────────
 
-const ZOOM_SCALE = 2.8;
+const ZOOM_SCALE = 2;
 const HOVER_DELAY_MS = 70;
 const SWIPE_THRESHOLD = 50;
 
@@ -64,7 +64,8 @@ function useImagePreloader(images, getImageUrl) {
       const rawUrl = resolveUrl(images[index]);
       if (!rawUrl) return;
 
-      for (const size of ["medium", "large"]) {
+      // ✅ Carga "medium" primero (se ve rápido) y "xl" para zoom
+      for (const size of ["medium", "xl"]) {
         const key = `${size}_${index}`;
         if (preloadedRef.current.has(key)) continue;
         preloadedRef.current.add(key);
@@ -78,7 +79,6 @@ function useImagePreloader(images, getImageUrl) {
 
         const el = new window.Image();
         el.onload = () => markLoaded(key);
-        // En error simplemente no marcamos → el componente muestra fallback
         el.src = url;
       }
     },
@@ -90,7 +90,8 @@ function useImagePreloader(images, getImageUrl) {
       if (!images?.[index]) return;
       const rawUrl = resolveUrl(images[index]);
       if (!rawUrl) return;
-      for (const size of ["medium", "large"]) {
+      // ✅ Verifica "medium" y "xl"
+      for (const size of ["medium", "xl"]) {
         const key = `${size}_${index}`;
         if (!loadedKeys[key] && isCached(getImageUrl(rawUrl, size))) {
           markLoaded(key);
@@ -120,7 +121,6 @@ function useSwipe(onSwipeLeft, onSwipeRight) {
       const dx = e.changedTouches[0].clientX - touchStartX.current;
       const dy = e.changedTouches[0].clientY - touchStartY.current;
 
-      // Solo si el gesto es predominantemente horizontal
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
         if (dx < 0) onSwipeLeft();
         else onSwipeRight();
@@ -215,7 +215,6 @@ const NavButton = memo(function NavButton({
 });
 
 // ─── Subcomponente: FullscreenModal ──────────────────────────────────────────
-
 const FullscreenModal = memo(function FullscreenModal({
   images,
   selectedIndex,
@@ -224,16 +223,26 @@ const FullscreenModal = memo(function FullscreenModal({
   onClose,
   onGoTo,
 }) {
+  // ✅ Estado para controlar el zoom
+  const [isZoomed, setIsZoomed] = useState(false);
+
+  // ✅ Reset zoom al cambiar de imagen
+  useEffect(() => {
+    setIsZoomed(false);
+  }, [selectedIndex]);
+
   const swipe = useSwipe(
     () => onGoTo(selectedIndex + 1),
     () => onGoTo(selectedIndex - 1),
   );
 
   const rawUrl = resolveUrl(images[selectedIndex]);
-  const largeUrl = getImageUrl(rawUrl, "large");
 
-  // Dots de navegación para mobile
-  const showDots = images.length > 1 && images.length <= 8;
+  // ✅ URL según estado
+  const imageUrl = isZoomed
+    ? getImageUrl(rawUrl, "xl")      // 1350×1800 (zoom)
+    : getImageUrl(rawUrl, "large");  // 1000×1333 (normal)
+
   const showThumbs = images.length > 1 && images.length > 0;
 
   return createPortal(
@@ -242,7 +251,11 @@ const FullscreenModal = memo(function FullscreenModal({
         role="dialog"
         aria-modal="true"
         aria-label={`Galería de ${productName}`}
-        className="fixed inset-0 bg-black/96 z-[9999] flex flex-col items-center justify-center select-none"
+        className="fixed inset-0 z-[9999] flex flex-col items-center justify-center select-none"
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
+        }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -253,7 +266,7 @@ const FullscreenModal = memo(function FullscreenModal({
         {/* Botón cerrar */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 p-2.5 rounded-full transition z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           aria-label="Cerrar galería"
         >
           <X size={20} />
@@ -267,6 +280,7 @@ const FullscreenModal = memo(function FullscreenModal({
               dark
               onClick={(e) => {
                 e.stopPropagation();
+                setIsZoomed(false);
                 onGoTo(selectedIndex - 1);
               }}
             />
@@ -275,62 +289,110 @@ const FullscreenModal = memo(function FullscreenModal({
               dark
               onClick={(e) => {
                 e.stopPropagation();
+                setIsZoomed(false);
                 onGoTo(selectedIndex + 1);
               }}
             />
           </>
         )}
 
-        {/* Imagen */}
-        <motion.img
-          key={`fs-${selectedIndex}`}
-          src={largeUrl}
-          alt={`${productName} – ${selectedIndex + 1} de ${images.length}`}
-          className="max-w-[90vw] max-h-[78vh] object-contain"
-          initial={{ scale: 0.97, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.97, opacity: 0 }}
-          transition={{ duration: 0.16 }}
-          draggable={false}
-          onClick={(e) => e.stopPropagation()}
-        />
+        {/* ✅ Contenedor principal con flex row para miniaturas a la izquierda */}
+        <div className="flex items-center justify-center w-full h-full gap-4 px-24">
 
-        {/* Thumbnails en fullscreen */}
-        {showThumbs && (
+          {/* ✅ Miniaturas a la IZQUIERDA */}
+          {showThumbs && (
+            <div
+              className="flex flex-col gap-2.5 overflow-y-auto max-h-[80vh] py-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                minWidth: '70px',
+                maxWidth: '90px',
+
+              }}
+            >
+              {images.map((img, i) => {
+                const url = resolveUrl(img);
+                return (
+                  <button
+                    key={i}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsZoomed(false);
+                      onGoTo(i);
+                    }}
+                    className={`
+                      flex-shrink-0 w-full rounded-md overflow-hidden border-2 transition-all duration-150
+                      ${i === selectedIndex
+                        ? "border-white scale-105 shadow-lg"
+                        : "border-white/25 hover:border-white/60 opacity-70 hover:opacity-100"
+                      }
+                    `}
+                    style={{ aspectRatio: "3/4" }}
+                    aria-label={`Ir a imagen ${i + 1}`}
+                    aria-current={i === selectedIndex ? "true" : undefined}
+                  >
+                    <img
+                      src={getImageUrl(url, "thumb")}
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ✅ Contenedor de la imagen con scroll */}
           <div
-            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[90vw] pb-1"
+            className={`
+              flex items-center justify-center flex-1 h-full
+              ${isZoomed ? 'overflow-auto' : 'overflow-hidden'}
+            `}
+            style={{
+              maxHeight: '100vh',
+              padding: isZoomed ? '20px' : '0',
+              // ✅ Estas 3 líneas ocultan el scrollbar pero mantienen la funcionalidad
+              scrollbarWidth: 'none', // Firefox
+              msOverflowStyle: 'none', // IE/Edge
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            {images.map((img, i) => {
-              const url = resolveUrl(img);
-              return (
-                <button
-                  key={i}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onGoTo(i);
-                  }}
-                  className={`
-                    flex-shrink-0 w-11 h-11 rounded-md overflow-hidden border-2 transition-all duration-150
-                    ${i === selectedIndex
-                      ? "border-white scale-110 shadow-lg"
-                      : "border-white/25 hover:border-white/60 opacity-70 hover:opacity-100"
-                    }
-                  `}
-                  aria-label={`Ir a imagen ${i + 1}`}
-                  aria-current={i === selectedIndex ? "true" : undefined}
-                >
-                  <img
-                    src={getImageUrl(url, "thumb")}
-                    alt=""
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              );
-            })}
+            {/* ✅ Imagen con zoom adaptable */}
+            <motion.img
+              key={`fs-${selectedIndex}-${isZoomed}`}
+              src={imageUrl}
+              alt={`${productName} – ${selectedIndex + 1} de ${images.length}`}
+              style={{
+                display: 'block',
+                WebkitUserSelect: 'none',
+                margin: 'auto',
+                cursor: isZoomed ? 'zoom-out' : 'zoom-in',
+                backgroundColor: 'hsl(0, 0%, 90%)',
+                transition: 'background-color 300ms, width 300ms, height 300ms, max-width 300ms, max-height 300ms',
+                objectFit: 'contain',
+                flexShrink: 0,
+                width: isZoomed ? 'auto' : 'auto',
+                height: isZoomed ? 'auto' : 'auto',
+                maxWidth: isZoomed ? '95vw' : '85vw',
+                maxHeight: isZoomed ? 'none' : '90vh',
+                minWidth: isZoomed ? '50vw' : 'auto',
+                minHeight: isZoomed ? '50vh' : 'auto',
+              }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              draggable={false}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsZoomed(prev => !prev);
+              }}
+            />
           </div>
-        )}
+        </div>
+
+
 
         {/* Contador */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
@@ -341,7 +403,6 @@ const FullscreenModal = memo(function FullscreenModal({
     document.body,
   );
 });
-
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 const ProductZoom = ({ images, getImageUrl, productName }) => {
@@ -391,8 +452,6 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
       if (!images?.length) return;
       const next = ((index % images.length) + images.length) % images.length;
       if (next === selectedIndex) return;
-
-      // Check caché síncronamente antes del re-render
       checkCached(next);
       setSelectedIndex(next);
       setZoomPos({ x: 50, y: 50 });
@@ -411,21 +470,22 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
     return () => window.removeEventListener("keydown", handler);
   }, [fullscreen, selectedIndex, goTo]);
 
-  // URLs derivadas (memoizadas)
+  // ✅ URLs correctas: medium para mostrar, xl para zoom
   const { mediumUrl, largeUrl } = useMemo(() => {
     if (!images?.length) return { mediumUrl: null, largeUrl: null };
     const rawUrl = resolveUrl(images[selectedIndex]);
     return {
-      mediumUrl: getImageUrl(rawUrl, "medium"),
-      largeUrl: getImageUrl(rawUrl, "large"),
+      mediumUrl: getImageUrl(rawUrl, "medium"), // imagen principal visible
+      largeUrl: getImageUrl(rawUrl, "xl"),     // capa de zoom alta resolución
     };
   }, [images, selectedIndex, getImageUrl]);
 
+  // ✅ Keys correctas para medium y xl
   const isMediumLoaded = !!loadedKeys[`medium_${selectedIndex}`];
-  const isLargeLoaded = !!loadedKeys[`large_${selectedIndex}`];
+  const isLargeLoaded = !!loadedKeys[`xl_${selectedIndex}`];
   const zoomReady = isHovering && isMediumLoaded && isLargeLoaded;
 
-  // Mouse move con rAF para no bloquear el hilo principal
+  // Mouse move con rAF
   const handleMouseMove = useCallback(
     (e) => {
       if (!isHovering || !containerRef.current) return;
@@ -482,7 +542,7 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
     () => goTo(selectedIndex - 1),
   );
 
-  // Zoom background style (memoizado para evitar recalculo en cada render)
+  // Zoom background style
   const zoomStyle = useMemo(
     () => ({
       backgroundImage: `url(${largeUrl})`,
@@ -574,12 +634,10 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
               overflow-hidden shadow-sm transition-shadow duration-200
               ${zoomReady ? "shadow-md" : ""}
             `}
-            style={{ paddingBottom: "125%" }}
+            style={{ paddingBottom: "133.333%" }}
             onMouseMove={handleMouseMove}
             onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => {
-              setIsHovering(false);
-            }}
+            onMouseLeave={() => setIsHovering(false)}
             onClick={() => setFullscreen(true)}
             {...swipe}
           >
@@ -666,7 +724,6 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
               style={{ opacity: isMediumLoaded ? 1 : 0, transition: "opacity 0.25s" }}
               onLoad={() => markLoaded(`medium_${selectedIndex}`)}
               onError={() => {
-                // Fallback: intentar con largeUrl
                 if (largeUrl && largeUrl !== mediumUrl) {
                   markLoaded(`medium_${selectedIndex}`);
                 }
