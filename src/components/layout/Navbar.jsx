@@ -386,8 +386,8 @@ export default function Navbar() {
                             <div
                               key={cat.id}
                               className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all duration-150 border-r-2 ${activeCategory?.id === cat.id
-                                  ? "bg-white text-orange-500 border-orange-500"
-                                  : "text-gray-600 border-transparent"
+                                ? "bg-white text-orange-500 border-orange-500"
+                                : "text-gray-600 border-transparent"
                                 }`}
                               onMouseEnter={() => handleCategoryMouseEnter(cat)}
                             >
@@ -483,10 +483,10 @@ export default function Navbar() {
             <form onSubmit={handleSearch} className="relative">
               <div
                 className={`flex border-2 rounded-xl overflow-hidden transition-all duration-300 ${isSearchActive
-                    ? "border-red-500 shadow-lg shadow-red-200 ring-2 ring-red-200"
-                    : showSearch
-                      ? "border-red-400 shadow-lg shadow-red-100"
-                      : "border-gray-200"
+                  ? "border-red-500 shadow-lg shadow-red-200 ring-2 ring-red-200"
+                  : showSearch
+                    ? "border-red-400 shadow-lg shadow-red-100"
+                    : "border-gray-200"
                   } ${isSearchActive ? "relative z-50 bg-white" : ""}`}
               >
                 <input
@@ -845,8 +845,8 @@ export default function Navbar() {
                 <Link
                   to="/products"
                   className={`text-sm px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition ${location.pathname === "/products" && !location.search
-                      ? "bg-red-50 text-red-500"
-                      : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
+                    ? "bg-red-50 text-red-500"
+                    : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
                     }`}
                   onMouseEnter={() => setActiveCategory(null)}
                 >
@@ -862,8 +862,8 @@ export default function Navbar() {
                     <Link
                       to={`/category/${cat.id}`}
                       className={`text-sm px-3 py-1.5 rounded-lg whitespace-nowrap transition inline-flex items-center gap-1 ${location.pathname === `/category/${cat.id}`
-                          ? "bg-red-50 text-red-500 font-medium"
-                          : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
+                        ? "bg-red-50 text-red-500 font-medium"
+                        : "text-gray-600 hover:text-red-500 hover:bg-gray-50"
                         }`}
                     >
                       {cat.nombre}

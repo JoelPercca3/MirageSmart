@@ -5,18 +5,21 @@ import { X, Star, ChevronDown, Camera, ThumbsUp } from "lucide-react";
 import { timeAgo } from "../../utils/formatDate.js";
 
 // Componente StarRow reutilizable
-const StarRow = ({ rating, size = 14 }) => (
+const StarRow = ({ rating, size = 16 }) => (
     <div className="flex gap-0.5">
         {Array.from({ length: 5 }, (_, i) => (
             <Star
                 key={i}
                 size={size}
-                className={i < Math.round(rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+                className={
+                    i < Math.round(rating)
+                        ? "fill-gray-800 text-gray-800 dark:fill-gray-900 dark:text-gray-900"
+                        : "text-gray-300 dark:text-gray-600"
+                }
             />
         ))}
     </div>
 );
-
 // Componente ReviewCard para el modal
 const ReviewCardModal = ({ rev, onClick }) => {
     const images = useMemo(() => {
@@ -257,7 +260,6 @@ export default function ReviewsModal({
                                 <X size={20} className="text-gray-500" />
                             </button>
                         </div>
-
                         {/* Contenido scrollable */}
                         <div className="flex-1 overflow-y-auto px-6 py-4">
                             {/* Resumen de calificaciones */}
@@ -277,18 +279,21 @@ export default function ReviewsModal({
                                         <button
                                             key={star}
                                             onClick={() => setSelectedRating(selectedRating === String(star) ? "all" : String(star))}
-                                            className={`w-full flex items-center gap-2 text-xs hover:bg-gray-50 px-1 py-0.5 rounded transition-colors ${selectedRating === String(star) ? "bg-blue-50" : ""
+                                            className={`w-full flex items-center gap-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 px-1 py-0.5 rounded transition-colors ${selectedRating === String(star) ? "bg-blue-50 dark:bg-blue-900/30" : ""
                                                 }`}
                                         >
-                                            <span className="text-gray-600 w-6 text-right">{star}</span>
-                                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                                            <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                            <span className="text-gray-600 dark:text-gray-400 w-6 text-right">{star}</span>
+                                            <Star
+                                                size={12}
+                                                className="fill-gray-800 text-gray-800 dark:fill-gray-300 dark:text-gray-300"
+                                            />
+                                            <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-yellow-400 rounded-full transition-all duration-300"
+                                                    className="h-full bg-gray-800 dark:bg-gray-300 rounded-full transition-all duration-300"
                                                     style={{ width: `${getPercentage(ratingStats.counts[star])}%` }}
                                                 />
                                             </div>
-                                            <span className="text-gray-400 w-8 text-right">{ratingStats.counts[star]}</span>
+                                            <span className="text-gray-400 dark:text-gray-500 w-8 text-right">{ratingStats.counts[star]}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -301,8 +306,8 @@ export default function ReviewsModal({
                                         key={filter.id}
                                         onClick={() => setSelectedRating(filter.id)}
                                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${selectedRating === filter.id
-                                            ? "border-gray-800 bg-gray-900 text-white"
-                                            : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                                                ? "border-gray-800 bg-gray-900 text-white"
+                                                : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
                                             }`}
                                     >
                                         {filter.label}
@@ -318,8 +323,8 @@ export default function ReviewsModal({
                                             key={tag.id}
                                             onClick={() => toggleTag(tag.id)}
                                             className={`px-3 py-1 text-xs rounded-full border transition-colors ${activeTags.includes(tag.id)
-                                                ? "border-gray-800 bg-gray-100 text-gray-800"
-                                                : "border-gray-200 text-gray-500 hover:border-gray-400"
+                                                    ? "border-gray-800 bg-gray-100 text-gray-800"
+                                                    : "border-gray-200 text-gray-500 hover:border-gray-400"
                                                 }`}
                                         >
                                             {tag.label}
@@ -372,7 +377,7 @@ export default function ReviewsModal({
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </div> {/* ← ESTE ES EL CIERRE QUE FALTABA */}
 
                         {/* Footer con contador */}
                         <div className="px-6 py-3 border-t border-gray-100 text-xs text-gray-400 flex-shrink-0 bg-gray-50/50">

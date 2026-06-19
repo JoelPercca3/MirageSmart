@@ -667,18 +667,6 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
               </>
             )}
 
-            {/* Botón ampliar */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setFullscreen(true);
-              }}
-              className="absolute bottom-3 right-3 z-20 p-2 bg-black/40 hover:bg-black/65 rounded-full transition-colors shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-              aria-label="Ver en pantalla completa"
-            >
-              <ZoomIn size={16} className="text-white" />
-            </button>
-
             {/* Dots mobile */}
             {images.length > 1 && images.length <= 8 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 lg:hidden">
@@ -763,12 +751,7 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
           </div>
 
           {/* Hint texto */}
-          <p className="text-center text-[11px] text-gray-400 mt-2 leading-relaxed hidden lg:block">
-            Pasa el cursor para ampliar · Clic para pantalla completa
-          </p>
-          <p className="text-center text-[11px] text-gray-400 mt-2 leading-relaxed lg:hidden">
-            Desliza para navegar · Toca para ampliar
-          </p>
+
         </div>
       </div>
     </>

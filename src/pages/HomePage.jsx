@@ -23,47 +23,43 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.08 } },
 };
 
-// ── Hero Banner con carrusel automático ───────────────────
+// ── Hero Banner con imágenes ───────────────────────────────────
 const SLIDES = [
   {
-    bg: "from-red-500 via-orange-400 to-yellow-400",
+    image: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1200", // Moda
     tag: "🔥 Oferta especial",
     title: "¡Hasta 70% OFF!",
     sub: "En miles de productos seleccionados",
     btn: "Ver ofertas",
     link: "/products?sort=price_asc",
-    emoji: "👗",
-    color: "text-yellow-300",
+    overlay: "from-black/70 to-black/30",
   },
   {
-    bg: "from-purple-600 via-pink-500 to-rose-400",
+    image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200", // Moda mujer
     tag: "✨ Nueva colección",
     title: "Moda de temporada",
     sub: "Recién llegada — Sé el primero en lucirla",
     btn: "Ver ahora",
     link: "/products?sort=newest",
-    emoji: "💄",
-    color: "text-pink-200",
+    overlay: "from-black/70 to-black/30",
   },
   {
-    bg: "from-blue-600 via-cyan-500 to-teal-400",
+    image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200", // Tecnología
     tag: "🚚 Envío gratis",
     title: "En pedidos +S/ 150",
     sub: "Rápido, seguro y directo a tu puerta",
     btn: "Comprar",
     link: "/products",
-    emoji: "📦",
-    color: "text-cyan-200",
+    overlay: "from-black/60 to-black/20",
   },
   {
-    bg: "from-green-500 via-emerald-500 to-teal-500",
+    image: "https://images.unsplash.com/photo-1611078489935-0cb964de46d6?q=80&w=1548&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Electrónica
     tag: "⚡ Tech & Gadgets",
     title: "Electrónica top",
     sub: "Los mejores gadgets al mejor precio",
     btn: "Explorar",
     link: "/category/3",
-    emoji: "📱",
-    color: "text-green-200",
+    overlay: "from-black/70 to-black/30",
   },
 ];
 
@@ -75,7 +71,7 @@ function HeroBanner() {
     if (!isAutoPlaying) return;
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % SLIDES.length);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(timer);
   }, [isAutoPlaying]);
 
@@ -83,92 +79,91 @@ function HeroBanner() {
 
   return (
     <div
-      className="relative overflow-hidden h-56 sm:h-80"
+      className="relative overflow-hidden h-72 sm:h-96 md:h-[520px]"
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
     >
       <motion.div
         key={current}
-        className={`absolute inset-0 bg-gradient-to-r ${slide.bg} animate-gradient flex items-center`}
-        initial={{ opacity: 0, x: 60 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -60 }}
-        transition={{ duration: 0.5 }}
+        className="absolute inset-0"
+        initial={{ opacity: 0, scale: 1.1 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 1.1 }}
+        transition={{ duration: 0.6 }}
       >
-        <div className="px-8 sm:px-14 text-white flex-1">
-          <motion.p
-            className={`text-xs sm:text-sm font-semibold mb-1 ${slide.color}`}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            {slide.tag}
-          </motion.p>
-          <motion.h1
-            className="text-3xl sm:text-5xl font-extrabold leading-tight mb-2"
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            {slide.title}
-          </motion.h1>
-          <motion.p
-            className="text-sm sm:text-base opacity-90 mb-5"
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            {slide.sub}
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Link
-              to={slide.link}
-              className="inline-flex items-center gap-2 bg-white text-gray-800 font-bold px-6 py-2.5 rounded-full hover:bg-opacity-90 hover:scale-105 transition-all text-sm shadow-lg"
+        {/* Imagen de fondo */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${slide.image})` }}
+        />
+
+        {/* Overlay oscuro para legibilidad */}
+        <div className={`absolute inset-0 bg-gradient-to-r ${slide.overlay}`} />
+
+        {/* Contenido */}
+        <div className="relative h-full flex items-center">
+          <div className="px-8 sm:px-14 text-white flex-1 max-w-2xl">
+            <motion.p
+              className="text-xs sm:text-sm font-semibold mb-1 text-yellow-300"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
             >
-              {slide.btn} <ArrowRight size={16} />
-            </Link>
-          </motion.div>
-        </div>
-
-        <div className="hidden sm:flex items-center justify-center w-48 h-full opacity-20">
-          <span className="text-9xl">{slide.emoji}</span>
-        </div>
-
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 pointer-events-none overflow-hidden">
-          <div className="absolute top-4 right-8 w-32 h-32 rounded-full border-4 border-white/20 animate-pulse" />
-          <div
-            className="absolute bottom-4 right-20 w-20 h-20 rounded-full border-4 border-white/20"
-            style={{ animation: "ping 2s cubic-bezier(0,0,.2,1) infinite" }}
-          />
-          <div className="absolute top-1/2 right-4 w-16 h-16 rounded-full bg-white/10" />
+              {slide.tag}
+            </motion.p>
+            <motion.h1
+              className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-tight mb-2"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              {slide.title}
+            </motion.h1>
+            <motion.p
+              className="text-base sm:text-lg md:text-xl opacity-90 mb-5"
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              {slide.sub}
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Link
+                to={slide.link}
+                className="inline-flex items-center gap-2 bg-white text-gray-800 font-bold px-8 py-3.5 rounded-full hover:bg-opacity-90 hover:scale-105 transition-all text-base shadow-lg"
+              >
+                {slide.btn} <ArrowRight size={18} />
+              </Link>
+            </motion.div>
+          </div>
         </div>
       </motion.div>
 
+      {/* Flechas de navegación */}
       <button
-        onClick={() =>
-          setCurrent((prev) => (prev - 1 + SLIDES.length) % SLIDES.length)
-        }
-        className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md border border-white/20 hover:bg-white/40 rounded-full transition backdrop-blur-sm text-white z-10"
+        onClick={() => setCurrent((prev) => (prev - 1 + SLIDES.length) % SLIDES.length)}
+        className="absolute left-3 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full transition text-white z-10"
       >
-        <ChevronLeft size={18} />
+        <ChevronLeft size={22} />
       </button>
       <button
         onClick={() => setCurrent((prev) => (prev + 1) % SLIDES.length)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/20 hover:bg-white/40 rounded-full transition backdrop-blur-sm text-white z-10"
+        className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full transition text-white z-10"
       >
-        <ChevronRight size={18} />
+        <ChevronRight size={22} />
       </button>
 
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+      {/* Indicadores */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
         {SLIDES.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
-            className={`rounded-full transition-all ${i === current ? "w-6 h-2 bg-white" : "w-2 h-2 bg-white/50"
+            className={`rounded-full transition-all ${i === current ? "w-8 h-2.5 bg-white" : "w-2.5 h-2.5 bg-white/50"
               }`}
           />
         ))}
@@ -176,7 +171,6 @@ function HeroBanner() {
     </div>
   );
 }
-
 // ── Flash Sale con contador regresivo ─────────────────────
 function FlashSale({ products }) {
   const [timeLeft, setTimeLeft] = useState({ h: 5, m: 59, s: 59 });
@@ -203,7 +197,7 @@ function FlashSale({ products }) {
       viewport={{ once: true }}
       className="my-5"
     >
-      <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-none p-4 sm:p-5">
+      <div className="bg-gradient-to-r from-black to-gray-800 rounded-none p-4 sm:p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-xl">

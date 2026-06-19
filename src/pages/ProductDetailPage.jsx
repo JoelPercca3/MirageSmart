@@ -114,7 +114,11 @@ function StarRow({ rating, size = 14 }) {
         <Star
           key={i}
           size={size}
-          className={i < Math.round(rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+          className={
+            i < Math.round(rating)
+              ? "fill-gray-800 text-gray-800 dark:fill-gray-900 dark:text-gray-900" // Estrellas llenas oscuras
+              : "text-gray-300 dark:text-gray-600" // Estrellas vacías
+          }
         />
       ))}
     </div>
@@ -190,7 +194,7 @@ function QuantitySelector({ value, max, onChange }) {
         className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Reducir cantidad"
       >
-        <Minus size={14} />
+        <Minus size={16} />
       </button>
       <span className="w-12 text-center text-sm font-medium" aria-live="polite">{value}</span>
       <button
@@ -199,7 +203,7 @@ function QuantitySelector({ value, max, onChange }) {
         className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Aumentar cantidad"
       >
-        <Plus size={14} />
+        <Plus size={16} />
       </button>
     </div>
   );
@@ -900,7 +904,7 @@ export default function ProductDetailPage() {
             {/* Vendedor */}
             <div className="flex items-center gap-1 mb-5">
               <span className="text-xs text-gray-500">Vendido por</span>
-              <span className="text-xs font-medium text-gray-800 uppercase bg-gray-100 px-1.5 py-0.5 rounded">
+              <span className="text-xs font-medium text-gray-700 uppercase bg-gray-100 px-1.5 py-0.5 rounded">
                 MirageMart
               </span>
               <Tooltip content="Producto publicado directamente por MirageMart">
@@ -916,7 +920,7 @@ export default function ProductDetailPage() {
             )}
 
             {/* Nombre */}
-            <h1 className="text-xl lg:text-2xl font-black text-gray-900 leading-tight mb-4">
+            <h1 className="text-xl lg:text-xl font-stretch-50% text-gray-900 leading-tight mb-6">
               {product.nombre}
             </h1>
 
@@ -936,17 +940,17 @@ export default function ProductDetailPage() {
             )}
 
             {/* Precio */}
-            <div className="mb-5">
+            <div className="mb-10">
               {descuento > 0 ? (
                 <>
-                  <div className="flex items-baseline gap-2 flex-wrap">
+                  <div className="flex items-baseline gap-3 flex-wrap">
                     <span className="text-3xl font-bold text-gray-900">{formatPrice(precio)}</span>
                     <span className="text-sm text-gray-400 line-through">{formatPrice(precioBase)}</span>
                     <span className="bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">
                       -{descuento}%
                     </span>
                   </div>
-                  <p className="text-xs text-green-600 mt-1">
+                  <p className="text-xs text-green-700 mt-1">
                     Ahorras {formatPrice(precioBase - precio)}
                   </p>
                 </>
@@ -973,39 +977,64 @@ export default function ProductDetailPage() {
             )}
 
             {/* Cantidad + Botones */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="flex items-center gap-4 mb-6">
               <QuantitySelector value={quantity} max={maxStock} onChange={setQuantity} />
               <Button
-                className="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-medium"
+                variant="dark"
+                className="w-auto px-8 font-medium"
                 onClick={handleAddToCart}
                 loading={addToCart.isPending}
                 disabled={noVariantChosen || outOfStock}
               >
-                <ShoppingCart size={16} className="mr-2" />
+                <ShoppingCart size={24} className="mr-2" />
                 {noVariantChosen ? "Elige opciones" : outOfStock ? "Sin stock" : "Agregar al carro"}
               </Button>
               <button
+                variant="dark"
                 onClick={handleWishlist}
                 aria-label={wishlisted ? "Quitar de favoritos" : "Agregar a favoritos"}
                 aria-pressed={wishlisted}
                 className="p-2 border border-gray-200 hover:border-gray-400 transition rounded-md"
               >
-                <Heart size={18} className={wishlisted ? "fill-red-500 text-red-500" : "text-gray-500"} />
+                <Heart size={26} className={wishlisted ? "fill-red-500 text-red-500" : "text-gray-900"} />
               </button>
             </div>
 
             {/* Garantías */}
             <div className="grid grid-cols-3 gap-3 py-4 border-t border-b border-gray-100 mb-5">
-              {GUARANTEES.map(({ icon: Icon, text, tooltip }) => (
-                <Tooltip key={text} content={tooltip}>
-                  <div className="flex flex-col items-center gap-1">
-                    <Icon size={18} className="text-gray-500" />
-                    <span className="text-xs text-gray-500 text-center">{text}</span>
-                  </div>
-                </Tooltip>
-              ))}
-            </div>
+              {GUARANTEES.map(({ icon: Icon, text, tooltip }, index) => {
+                const styles = [
+                  {
+                    icon: "text-blue-600",
+                    text: "text-blue-600",
+                    bg: "bg-blue-50",
+                  },
+                  {
+                    icon: "text-green-600",
+                    text: "text-green-600",
+                    bg: "bg-green-50",
+                  },
+                  {
+                    icon: "text-orange-600",
+                    text: "text-orange-600",
+                    bg: "bg-orange-50",
+                  },
+                ];
 
+                const style = styles[index];
+
+                return (
+                  <Tooltip key={text} content={tooltip}>
+                    <div className={`flex flex-col items-center gap-1 p-2 rounded-lg ${style.bg}`}>
+                      <Icon size={18} className={style.icon} />
+                      <span className={`text-xs text-center font-medium ${style.text}`}>
+                        {text}
+                      </span>
+                    </div>
+                  </Tooltip>
+                );
+              })}
+            </div>
             {/* Descripción corta */}
             {product.descripcion_corta && (
               <p className="text-sm text-gray-600 mb-5 leading-relaxed">{product.descripcion_corta}</p>

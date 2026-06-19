@@ -4,11 +4,15 @@ import { cn } from "../../utils/cn.js";
 
 const variants = {
   primary: "bg-red-500 hover:bg-red-600 text-white",
+  dark: "bg-gray-900 hover:bg-gray-800 text-white",
+
   secondary: "bg-gray-100 hover:bg-gray-200 text-gray-800",
   outline: "border border-red-500 text-red-500 hover:bg-red-50",
   ghost: "hover:bg-gray-100 text-gray-700",
   danger: "bg-red-600 hover:bg-red-700 text-white",
+
 };
+
 
 const sizes = {
   sm: "px-3 py-1.5 text-sm",

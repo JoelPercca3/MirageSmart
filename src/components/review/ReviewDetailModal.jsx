@@ -1,18 +1,21 @@
-// src/components/review/ReviewDetailModal.jsx
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight, Star, ThumbsUp, Share2, ShoppingCart } from "lucide-react";
 import { timeAgo } from "../../utils/formatDate.js";
 import { formatPrice } from "../../utils/formatPrice.js";
 
-// Componente StarRow
+// Componente StarRow - VERSIÓN DARK
 const StarRow = ({ rating, size = 16 }) => (
     <div className="flex gap-0.5">
         {Array.from({ length: 5 }, (_, i) => (
             <Star
                 key={i}
                 size={size}
-                className={i < Math.round(rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+                className={
+                    i < Math.round(rating)
+                        ? "fill-gray-800 text-gray-800 dark:fill-gray-900 dark:text-gray-900"
+                        : "text-gray-300 dark:text-gray-600"
+                }
             />
         ))}
     </div>
