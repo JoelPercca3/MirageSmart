@@ -633,6 +633,8 @@ const ProductZoom = ({ images, getImageUrl, productName }) => {
               relative w-full bg-white rounded-xl border border-gray-100
               overflow-hidden shadow-sm transition-shadow duration-200
               ${zoomReady ? "shadow-md" : ""}
+                  cursor-crosshair  // ← Cursor de cruz (+)
+
             `}
             style={{ paddingBottom: "133.333%" }}
             onMouseMove={handleMouseMove}

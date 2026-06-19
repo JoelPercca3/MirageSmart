@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { SlidersHorizontal, X } from "lucide-react";
-import { useProducts } from "../hooks/useProducts.js";
 import { useQuery } from "@tanstack/react-query";
 import { categoryAPI } from "../api/category.api.js";
+import { productAPI } from "../api/product.api.js";
 import ProductCard from "../components/product/ProductCard.jsx";
 import { SkeletonGrid } from "../components/ui/SkeletonCard.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -17,27 +17,95 @@ const SORT_OPTIONS = [
   { label: "Mejor valorados", value: "rating:desc" },
 ];
 
+const SINONIMOS = {
+  audifonos: ["auriculares", "headphones", "cascos", "earphones", "earbuds"],
+  auriculares: ["audifonos", "headphones", "cascos", "earphones", "earbuds"],
+  headphones: ["audifonos", "auriculares", "cascos"],
+  earbuds: ["audifonos", "auriculares", "earphones"],
+  cascos: ["audifonos", "auriculares", "headphones"],
+  casaca: ["chaqueta", "jacket", "abrigo", "campera"],
+  chaqueta: ["casaca", "jacket", "abrigo", "campera"],
+  campera: ["casaca", "chaqueta", "jacket"],
+  abrigo: ["casaca", "chaqueta", "campera"],
+  polera: ["camiseta", "polo", "playera", "remera"],
+  camiseta: ["polera", "polo", "playera", "remera", "t-shirt"],
+  polo: ["polera", "camiseta", "playera", "remera"],
+  playera: ["polera", "camiseta", "polo", "remera"],
+  remera: ["polera", "camiseta", "polo", "playera"],
+  pantalon: ["jean", "jeans", "leggins", "leggings"],
+  jean: ["pantalon", "jeans"],
+  jeans: ["pantalon", "jean"],
+  zapatillas: ["tenis", "sneakers", "deportivos", "zapatos"],
+  tenis: ["zapatillas", "sneakers", "deportivos"],
+  sneakers: ["zapatillas", "tenis", "deportivos"],
+  zapatos: ["zapatillas", "calzado", "tenis"],
+  calzado: ["zapatos", "zapatillas", "tenis"],
+  celular: ["smartphone", "movil", "telefono", "iphone", "android"],
+  smartphone: ["celular", "movil", "telefono"],
+  movil: ["celular", "smartphone", "telefono"],
+  telefono: ["celular", "smartphone", "movil"],
+  laptop: ["notebook", "computadora", "portatil", "pc"],
+  notebook: ["laptop", "computadora", "portatil"],
+  computadora: ["laptop", "notebook", "pc", "computador"],
+  portatil: ["laptop", "notebook"],
+  teclado: ["keyboard"],
+  keyboard: ["teclado"],
+  mouse: ["raton", "cursor"],
+  raton: ["mouse"],
+  parlante: ["altavoz", "bocina", "speaker"],
+  altavoz: ["parlante", "bocina", "speaker"],
+  bocina: ["parlante", "altavoz", "speaker"],
+  speaker: ["parlante", "altavoz", "bocina"],
+  televisor: ["tv", "television", "pantalla"],
+  television: ["televisor", "tv", "pantalla"],
+  tv: ["televisor", "television"],
+  camara: ["camera", "fotografica"],
+  camera: ["camara", "fotografica"],
+  refrigeradora: ["refrigerador", "nevera", "heladera"],
+  refrigerador: ["refrigeradora", "nevera", "heladera"],
+  nevera: ["refrigeradora", "refrigerador", "heladera"],
+  sofa: ["sillon", "mueble", "couch"],
+  sillon: ["sofa", "mueble"],
+  bicicleta: ["bici", "bike", "ciclismo"],
+  bici: ["bicicleta", "bike"],
+  mochila: ["bolso", "backpack", "morral"],
+  bolso: ["mochila", "cartera", "bag"],
+  backpack: ["mochila", "bolso"],
+  cartera: ["bolso", "bolsa", "wallet"],
+};
+
+const expandirQ = (termino) => {
+  if (!termino) return "";
+  const t = termino.toLowerCase().trim();
+  const sinonimos = SINONIMOS[t] ?? [];
+  return [...new Set([t, ...sinonimos])].join(",");
+};
+
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
 
-  const q = searchParams.get("q") || "";
+  const qRaw = searchParams.get("q") || "";
+  const q = expandirQ(qRaw);
   const category_id = searchParams.get("category_id") || "";
   const sort = searchParams.get("sort") || "newest";
   const min_price = searchParams.get("min_price") || "";
   const max_price = searchParams.get("max_price") || "";
   const page = searchParams.get("page") || 1;
 
-  const { data: result, isLoading } = useProducts({
-    search: q,
-    category_id,
-    sort,
-    min_price,
-    max_price,
-    page,
-    limit: 20,
+  const { data: result, isLoading } = useQuery({
+    queryKey: ["products", "search", qRaw, category_id, sort, min_price, max_price, page],
+    queryFn: () => {
+      console.log("EJECUTANDO QUERYFN, qRaw:", qRaw); // ← TEMPORAL
+      return qRaw
+        ? productAPI.search(qRaw, { category_id, sort, min_price, max_price, page, limit: 20 })
+        : productAPI.getAll({ category_id, sort, min_price, max_price, page, limit: 20 });
+    },
+    select: (res) => ({
+      data: res.data,
+      meta: res.meta,
+    }),
   });
-
   const products = result?.data || [];
   const meta = result?.meta || {};
 
@@ -56,7 +124,7 @@ export default function ProductsPage() {
   };
 
   const clearFilters = () => setSearchParams({});
-  const hasFilters = q || category_id || min_price || max_price;
+  const hasFilters = qRaw || category_id || min_price || max_price;
 
   return (
     <div className="w-full px-28 py-3">
@@ -64,7 +132,7 @@ export default function ProductsPage() {
       <div className="flex items-center justify-between mb-0">
         <div>
           <h1 className="text-xl font-bold text-gray-800">
-            {q ? `Resultados para "${q}"` : "Todos los productos"}
+            {qRaw ? `Resultados para "${qRaw}"` : "Todos los productos"}
           </h1>
           {meta.total !== undefined && (
             <p className="text-sm text-gray-500 mt-0.5">
@@ -83,7 +151,6 @@ export default function ProductsPage() {
 
       <div className="flex gap-6">
         {/* Sidebar filtros */}
-
         <aside
           className={`w-64 flex-shrink-0 flex-col gap-5 ${showFilters ? "flex" : "hidden"} sm:flex`}
         >

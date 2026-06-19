@@ -18,6 +18,7 @@ import {
   HelpCircle,
   Check,
   X,
+  ChevronDown
 } from "lucide-react";
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -264,44 +265,44 @@ function ReviewCard({ rev, onClick }) {
 function ProductImageGallery({ images, getImageUrl, productName }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const PREVIEW_COUNT = 3;
 
   const validImages = useMemo(() => {
     return images?.filter(img => img?.url) ?? [];
   }, [images]);
 
-  // ✅ Solo mostrar si hay más de 1 imagen
   if (validImages.length <= 1) return null;
 
-  // ✅ Estilo para ocupar todo el espacio SIN bordes blancos
-  const getImageStyle = () => {
-    return {
-      width: '100%',
-      height: 'auto',
-      objectFit: 'cover', // ← Cambiado de 'contain' a 'cover'
-      display: 'block',
-      backgroundColor: 'transparent',
-    };
+  const previewImages = validImages.slice(0, PREVIEW_COUNT);
+  const hiddenImages = validImages.slice(PREVIEW_COUNT);
+  const hasMore = hiddenImages.length > 0;
+
+  const getImageStyle = () => ({
+    width: '100%',
+    height: 'auto',
+    objectFit: 'cover',
+    display: 'block',
+    backgroundColor: 'transparent',
+  });
+
+  const openModal = (img) => {
+    setSelectedImage(img);
+    setIsModalOpen(true);
   };
 
   return (
     <div className="mt-10 pt-6 border-t border-gray-100">
-      <h2 className="text-lg font-medium text-gray-800 mb-4">
-        Todas las imágenes del producto
-        <span className="text-sm font-normal text-gray-400 ml-2">
-          ({validImages.length} fotos)
-        </span>
-      </h2>
 
-      {/* ── Una sola columna SIN espacio extra ── */}
-      <div className="flex flex-col gap-1"> {/* ← gap aún más reducido */}
-        {validImages.map((img, index) => (
+
+      <div className="flex flex-col gap-1">
+        {/* Primeras imágenes del preview (todas menos la última) */}
+        {previewImages.slice(0, PREVIEW_COUNT - 1).map((img, index) => (
           <div
             key={img.id || index}
             className="overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
-            onClick={() => {
-              setSelectedImage(img);
-              setIsModalOpen(true);
-            }}
+            onClick={() => openModal(img)}
           >
             <img
               src={getImageUrl(img.url, "xl")}
@@ -312,14 +313,58 @@ function ProductImageGallery({ images, getImageUrl, productName }) {
             />
           </div>
         ))}
+
+        {/* Última imagen del preview con fade encima */}
+        {previewImages.length >= PREVIEW_COUNT && (
+          <div
+            className="relative overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
+            onClick={() => openModal(previewImages[PREVIEW_COUNT - 1])}
+          >
+            <img
+              src={getImageUrl(previewImages[PREVIEW_COUNT - 1].url, "xl")}
+              alt={`${productName} - imagen ${PREVIEW_COUNT}`}
+              style={getImageStyle()}
+              loading="lazy"
+              className="w-full h-auto"
+            />
+            {/* Overlay de fade — solo si hay más imágenes y no está expandido */}
+            {hasMore && !isExpanded && (
+              <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+            )}
+          </div>
+        )}
+
+        {/* Botón "Ver más" */}
+        {hasMore && !isExpanded && (
+          <button
+            onClick={() => setIsExpanded(true)}
+            className="flex items-center justify-center gap-2 w-full py-3 mt-1 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <ChevronDown size={18} className="text-gray-400" />
+            Ver más ({hiddenImages.length})
+          </button>
+        )}
+
+        {/* Imágenes ocultas — aparecen al expandir */}
+        {isExpanded && hiddenImages.map((img, index) => (
+          <div
+            key={img.id || index}
+            className="overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
+            onClick={() => openModal(img)}
+          >
+            <img
+              src={getImageUrl(img.url, "xl")}
+              alt={`${productName} - imagen ${PREVIEW_COUNT + index + 1}`}
+              style={getImageStyle()}
+              loading="lazy"
+              className="w-full h-auto"
+            />
+          </div>
+        ))}
       </div>
 
-      {/* ── Contador de imágenes ── */}
-      <div className="text-center text-xs text-gray-400 mt-3">
-        {validImages.length} imágenes en total
-      </div>
 
-      {/* ── Modal para ver imagen en grande ── */}
+      {/* Modal */}
       {isModalOpen && selectedImage && (
         <div
           className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center p-4"
@@ -586,6 +631,15 @@ export default function ProductDetailPage() {
     enabled: !!product?.category_id,
   });
 
+  // ← AGREGAR ESTO
+  const { data: parentCategory } = useQuery({
+    queryKey: ["category", category?.parent_id],
+    queryFn: () => categoryAPI.getOne(category?.parent_id),
+    select: (res) => res.data,
+    enabled: !!category?.parent_id,
+  });
+
+
   useEffect(() => {
     if (!product) return;
     const baseImages = product.images?.filter((img) => !img.variant_id) ?? [];
@@ -595,6 +649,8 @@ export default function ProductDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
+
+
 
   const handleVariantChange = useCallback((variant) => {
     setSelectedVariant(variant);
@@ -699,6 +755,18 @@ export default function ProductDetailPage() {
         <nav aria-label="Ruta de navegación" className="flex items-center gap-2 text-xs text-gray-400 mb-3 overflow-x-auto pb-1">
           <Link to="/" className="hover:text-gray-600 transition whitespace-nowrap">Home</Link>
           <span className="text-gray-300" aria-hidden="true">›</span>
+
+          {/* Categoría padre (Electrónica) */}
+          {parentCategory && (
+            <>
+              <Link to={`/category/${parentCategory.id}`} className="hover:text-gray-600 transition whitespace-nowrap capitalize">
+                {parentCategory.nombre}
+              </Link>
+              <span className="text-gray-300" aria-hidden="true">›</span>
+            </>
+          )}
+
+          {/* Subcategoría (Audífonos) */}
           {category && (
             <>
               <Link to={`/category/${product.category_id}`} className="hover:text-gray-600 transition whitespace-nowrap capitalize">
@@ -707,6 +775,7 @@ export default function ProductDetailPage() {
               <span className="text-gray-300" aria-hidden="true">›</span>
             </>
           )}
+
           <span className="text-gray-600 line-clamp-1 whitespace-nowrap" aria-current="page">
             {product.nombre}
           </span>
