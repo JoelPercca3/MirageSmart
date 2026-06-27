@@ -4,10 +4,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion } from "framer-motion";
-import { MapPin, Truck, Tag, ChevronDown, ChevronUp } from "lucide-react";
-import { useCart, useApplyCoupon } from "../hooks/useCart.js";
+import { MapPin, Truck, Tag, ChevronDown, ChevronUp, Flame, ShoppingCart } from "lucide-react";
+import { useCart, useApplyCoupon, useAddToCart } from "../hooks/useCart.js";
 import { useCreateOrder } from "../hooks/useOrders.js";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
 import { userAPI } from "../api/user.api.js";
 import useCartStore from "../store/useCartStore.js";
 import Button from "../components/ui/Button.jsx";
@@ -15,6 +15,7 @@ import { formatPrice } from "../utils/formatPrice.js";
 import api from "../api/axios.js";
 import { useCulqiPayment } from "../hooks/usePayment.js";
 import AddressModal from "../components/address/AddressModal.jsx";
+import { productAPI } from "../api/product.api.js";
 
 const schema = z.object({
   address_id: z.coerce
@@ -41,6 +42,7 @@ export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCartStore();
   const createOrder = useCreateOrder();
   const applyCoupon = useApplyCoupon();
+  const addToCart = useAddToCart();
   const { openCulqi, loading: culqiLoading } = useCulqiPayment();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -56,6 +58,27 @@ export default function CheckoutPage() {
     queryFn: () => api.get("/shipping"),
     select: (res) => res.data,
   });
+
+  // ── Relacionados de todos los productos del carrito ──
+  const cartProductIds = new Set(items.map((i) => i.product_id));
+
+  const relatedQueries = useQueries({
+    queries: items.map((item) => ({
+      queryKey: ["related", item.product_id],
+      queryFn: () => productAPI.getRelated(item.product_id),
+      select: (res) => res.data,
+      enabled: !!item.product_id,
+    })),
+  });
+
+  const suggestedProducts = [
+    ...new Map(
+      relatedQueries
+        .flatMap((q) => q.data ?? [])
+        .filter((p) => !cartProductIds.has(p.id))
+        .map((p) => [p.id, p])
+    ).values(),
+  ].slice(0, 4);
 
   const {
     register,
@@ -168,11 +191,10 @@ export default function CheckoutPage() {
                   {addresses.map((addr) => (
                     <label
                       key={addr.id}
-                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition ${
-                        watch("address_id") === addr.id
-                          ? "border-red-500 bg-red-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
+                      className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition ${watch("address_id") === addr.id
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200 hover:border-gray-300"
+                        }`}
                     >
                       <input
                         type="radio"
@@ -229,11 +251,10 @@ export default function CheckoutPage() {
                 {shippingMethods?.map((method) => (
                   <label
                     key={method.id}
-                    className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition ${
-                      watch("shipping_method_id") === method.id
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition ${watch("shipping_method_id") === method.id
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-200 hover:border-gray-300"
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <input
@@ -249,15 +270,12 @@ export default function CheckoutPage() {
                           {method.nombre}
                         </p>
                         <p className="text-xs text-gray-400">
-                          {method.dias_entrega_min}–{method.dias_entrega_max}{" "}
-                          días hábiles
+                          {method.dias_entrega_min}–{method.dias_entrega_max} días hábiles
                         </p>
                       </div>
                     </div>
                     <span className="font-bold text-sm text-gray-800">
-                      {method.precio == 0
-                        ? "Gratis"
-                        : formatPrice(method.precio)}
+                      {method.precio == 0 ? "Gratis" : formatPrice(method.precio)}
                     </span>
                   </label>
                 ))}
@@ -305,9 +323,7 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     value={couponInput}
-                    onChange={(e) =>
-                      setCouponInput(e.target.value.toUpperCase())
-                    }
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                     placeholder="Ingresa tu cupón"
                     className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-red-400"
                   />
@@ -333,11 +349,7 @@ export default function CheckoutPage() {
                 <h2 className="font-bold text-gray-800">
                   Notas del pedido (opcional)
                 </h2>
-                {showNotes ? (
-                  <ChevronUp size={18} />
-                ) : (
-                  <ChevronDown size={18} />
-                )}
+                {showNotes ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
               </button>
               {showNotes && (
                 <motion.div
@@ -359,9 +371,7 @@ export default function CheckoutPage() {
           {/* RESUMEN */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-24">
-              <h2 className="font-bold text-gray-800 mb-4">
-                Resumen del pedido
-              </h2>
+              <h2 className="font-bold text-gray-800 mb-4">Resumen del pedido</h2>
 
               {/* Items */}
               <div className="flex flex-col gap-3 mb-4 max-h-48 overflow-y-auto">
@@ -383,9 +393,7 @@ export default function CheckoutPage() {
                       <p className="text-xs text-gray-400">x{item.cantidad}</p>
                     </div>
                     <p className="text-xs font-bold text-gray-800 flex-shrink-0">
-                      {formatPrice(
-                        Number(item.precio_unitario) * item.cantidad,
-                      )}
+                      {formatPrice(Number(item.precio_unitario) * item.cantidad)}
                     </p>
                   </div>
                 ))}
@@ -412,9 +420,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-base font-bold border-t pt-3 mt-1">
                   <span>Total</span>
-                  <span className="text-red-500 text-xl">
-                    {formatPrice(total)}
-                  </span>
+                  <span className="text-red-500 text-xl">{formatPrice(total)}</span>
                 </div>
               </div>
 
@@ -432,34 +438,20 @@ export default function CheckoutPage() {
                   />
                   <span className="text-xs text-gray-600 leading-relaxed">
                     He leído y acepto los{" "}
-                    <Link
-                      to="/terminos"
-                      className="text-red-500 hover:underline"
-                      target="_blank"
-                    >
+                    <Link to="/terminos" className="text-red-500 hover:underline" target="_blank">
                       Términos y Condiciones
                     </Link>
                     , la{" "}
-                    <Link
-                      to="/privacidad"
-                      className="text-red-500 hover:underline"
-                      target="_blank"
-                    >
+                    <Link to="/privacidad" className="text-red-500 hover:underline" target="_blank">
                       Política de Privacidad
                     </Link>{" "}
                     y la{" "}
-                    <Link
-                      to="/reembolsos"
-                      className="text-red-500 hover:underline"
-                      target="_blank"
-                    >
+                    <Link to="/reembolsos" className="text-red-500 hover:underline" target="_blank">
                       Política de Reembolsos
                     </Link>
                   </span>
                 </label>
-                {termsError && (
-                  <p className="text-xs text-red-500 mt-2">{termsError}</p>
-                )}
+                {termsError && <p className="text-xs text-red-500 mt-2">{termsError}</p>}
               </div>
 
               {/* Pago */}
@@ -504,7 +496,98 @@ export default function CheckoutPage() {
         </div>
       </form>
 
-      {/* MODAL DIRECCIONES */}
+      {/* ── PRODUCTOS SUGERIDOS (AHORA ABAJO) ── */}
+      {suggestedProducts.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-12 pt-8 border-t border-gray-200"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="bg-orange-100 p-1.5 rounded-lg">
+              <Flame size={18} className="text-orange-500" />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-800 text-base">
+                ¡Llévalo también! Productos que combinan con tu pedido
+              </h2>
+              <p className="text-xs text-gray-400">
+                Agrégalos ahora y paga todo junto
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {suggestedProducts.map((product, i) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.07 }}
+                className="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+              >
+                {/* Imagen */}
+                <Link to={`/products/${product.id}`}>
+                  <div className="relative" style={{ paddingBottom: "100%" }}>
+                    <img
+                      src={
+                        product.images?.find((img) => !img.variant_id)?.url ||
+                        product.images?.[0]?.url ||
+                        "https://placehold.co/300x300?text=Sin+imagen"
+                      }
+                      alt={product.nombre}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    {product.porcentaje_desc > 0 && (
+                      <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">
+                        -{product.porcentaje_desc}%
+                      </span>
+                    )}
+                  </div>
+                </Link>
+
+                {/* Info del producto */}
+                <div className="p-2.5">
+                  <p className="text-xs font-medium text-gray-700 line-clamp-2 mb-1.5 leading-snug">
+                    {product.nombre}
+                  </p>
+                  <div className="flex items-center justify-between gap-1">
+                    <div>
+                      <p className="text-sm font-bold text-red-500">
+                        {formatPrice(
+                          product.precio_final ||
+                          product.precio_oferta ||
+                          product.precio_base
+                        )}
+                      </p>
+                      {product.precio_oferta &&
+                        Number(product.precio_base) > Number(product.precio_oferta) && (
+                          <p className="text-xs text-gray-400 line-through">
+                            {formatPrice(product.precio_base)}
+                          </p>
+                        )}
+                    </div>
+                    <button
+                      onClick={() =>
+                        addToCart.mutate({
+                          product_id: product.id,
+                          cantidad: 1,
+                        })
+                      }
+                      disabled={addToCart.isPending}
+                      className="flex-shrink-0 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-lg transition active:scale-95"
+                    >
+                      <ShoppingCart size={14} />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Address Modal */}
       <AddressModal
         isOpen={showAddressModal}
         onClose={() => setShowAddressModal(false)}

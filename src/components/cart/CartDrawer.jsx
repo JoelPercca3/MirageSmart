@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ShoppingBag } from "lucide-react";
+import { X, ShoppingBag, ArrowRight, ShoppingCart, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import useCartStore from "../../store/useCartStore.js";
 import { useCart } from "../../hooks/useCart.js";
@@ -9,7 +9,11 @@ import { formatPrice } from "../../utils/formatPrice.js";
 
 export default function CartDrawer() {
   const { isOpen, closeCart, items, subtotal } = useCartStore();
-  useCart(); // sincroniza el carrito con el backend
+  useCart();
+
+  const freeShipping = subtotal >= 150;
+  const freeShippingRemaining = Math.max(0, 150 - subtotal);
+  const freeShippingProgress = Math.min(100, (subtotal / 150) * 100);
 
   return (
     <AnimatePresence>
@@ -33,44 +37,47 @@ export default function CartDrawer() {
             className="fixed right-0 top-0 h-full w-full max-w-md bg-white z-50 flex flex-col shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <div className="flex items-center gap-2">
-                <ShoppingBag size={20} className="text-red-500" />
-
-                {/* LINK AL CARRITO */}
-                <Link
-                  to="/cart"
-                  onClick={closeCart}
-                  className="text-lg font-bold text-gray-800 hover:text-red-500 transition-colors"
-                >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <div className="bg-red-50 p-1.5 rounded-lg">
+                  <Package size={18} className="text-red-500" />
+                </div>
+                <span className="text-base font-bold text-gray-800">
                   Mi Carrito
-                </Link>
-
+                </span>
                 {items.length > 0 && (
                   <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                     {items.length}
                   </span>
                 )}
               </div>
-
               <button
                 onClick={closeCart}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-gray-600"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
+            {/* Barra de envío gratis - ELIMINADA */}
+
             {/* Items */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-5">
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-                  <ShoppingBag size={64} className="text-gray-200" />
-                  <p className="text-gray-500 font-medium">
-                    Tu carrito está vacío
-                  </p>
+                  <div className="bg-gray-50 rounded-full p-6">
+                    <ShoppingBag size={48} className="text-gray-200" />
+                  </div>
+                  <div>
+                    <p className="text-gray-700 font-semibold mb-1">
+                      Tu carrito está vacío
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      Agrega productos para comenzar
+                    </p>
+                  </div>
                   <Button variant="outline" onClick={closeCart} size="sm">
-                    Seguir comprando
+                    Ver productos
                   </Button>
                 </div>
               ) : (
@@ -82,29 +89,57 @@ export default function CartDrawer() {
               )}
             </div>
 
-            {/* Footer con total */}
+            {/* Footer */}
             {items.length > 0 && (
-              <div className="border-t p-4 bg-gray-50">
-                <div className="flex justify-between mb-1 text-sm text-gray-600">
-                  <span>Subtotal ({items.length} productos)</span>
-                  <span className="font-semibold text-gray-800">
+              <div className="border-t border-gray-100 p-5 bg-white">
+                {/* Subtotal */}
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-500">
+                    Subtotal ({items.length}{" "}
+                    {items.length === 1 ? "producto" : "productos"})
+                  </span>
+                  <span className="font-bold text-gray-800 text-base">
                     {formatPrice(subtotal)}
                   </span>
                 </div>
                 <p className="text-xs text-gray-400 mb-4">
-                  Envío calculado al finalizar
+                  Envío e impuestos calculados al finalizar
                 </p>
+
+                {/* Botón ver carrito completo - DARK HOVER */}
+                <Link
+                  to="/cart"
+                  onClick={closeCart}
+                  className="flex items-center justify-between w-full px-4 py-3 mb-3 border-2 border-gray-200 hover:border-gray-800 hover:bg-gray-900 rounded-xl transition-all duration-300 group"
+                >
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart
+                      size={16}
+                      className="text-gray-500 group-hover:text-white transition-colors duration-300"
+                    />
+                    <span className="text-sm font-semibold text-gray-700 group-hover:text-white transition-colors duration-300">
+                      Ver carrito completo
+                    </span>
+                  </div>
+                  <ArrowRight
+                    size={16}
+                    className="text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300"
+                  />
+                </Link>
+
+                {/* Botón checkout - DARK */}
                 <Link to="/checkout" onClick={closeCart}>
-                  <Button className="w-full" size="lg">
-                    Proceder al pago
+                  <Button
+                    className="w-full bg-gray-900 hover:bg-gray-800 text-white transition-colors duration-300"
+                    size="lg"
+                  >
+                    Proceder al pago · {formatPrice(subtotal)}
                   </Button>
                 </Link>
-                <button
-                  onClick={closeCart}
-                  className="w-full mt-2 text-sm text-gray-500 hover:text-gray-700 py-2"
-                >
-                  Seguir comprando
-                </button>
+
+                <p className="text-xs text-gray-400 text-center mt-3">
+                  🔒 Compra 100% segura y protegida
+                </p>
               </div>
             )}
           </motion.div>

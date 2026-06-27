@@ -1,16 +1,48 @@
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, ArrowLeft } from "lucide-react";
+import { useQueries } from "@tanstack/react-query";
 import { useCart } from "../hooks/useCart.js";
 import useCartStore from "../store/useCartStore.js";
 import CartItem from "../components/cart/CartItem.jsx";
 import CartSummary from "../components/cart/CartSummary.jsx";
 import Button from "../components/ui/Button.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
+import ProductCard from "../components/product/ProductCard.jsx";
+import { productAPI } from "../api/product.api.js";
+import { useFeaturedProducts } from "../hooks/useProducts.js";
 
 export default function CartPage() {
   const { isLoading } = useCart();
   const { items } = useCartStore();
+
+  // Relacionados de todos los productos del carrito
+  const cartProductIds = new Set(items.map((i) => i.product_id));
+
+  const relatedQueries = useQueries({
+    queries: items.map((item) => ({
+      queryKey: ["related", item.product_id],
+      queryFn: () => productAPI.getRelated(item.product_id),
+      select: (res) => res.data,
+      enabled: !!item.product_id,
+    })),
+  });
+
+  // Mezclamos, deduplicamos y filtramos los que ya están en el carrito
+  const relatedFiltered = [
+    ...new Map(
+      relatedQueries
+        .flatMap((q) => q.data ?? [])
+        .filter((p) => !cartProductIds.has(p.id))
+        .map((p) => [p.id, p])
+    ).values(),
+  ].slice(0, 6);
+
+  // Fallback: productos destacados cuando no hay relacionados
+  const { data: featured } = useFeaturedProducts();
+  const featuredFiltered = (featured ?? [])
+    .filter((p) => !cartProductIds.has(p.id))
+    .slice(0, 6);
 
   if (isLoading)
     return (
@@ -81,6 +113,40 @@ export default function CartPage() {
           <CartSummary />
         </div>
       </div>
+
+      {/* Productos relacionados o destacados como fallback */}
+      {(relatedFiltered.length > 0 || featuredFiltered.length > 0) && (
+        <div className="mt-14 pt-8 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-gray-800">
+              {relatedFiltered.length > 0
+                ? "También te puede interesar"
+                : "Productos destacados"}
+            </h2>
+            <Link
+              to="/products"
+              className="text-sm text-red-500 hover:underline"
+            >
+              Ver más →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {(relatedFiltered.length > 0
+              ? relatedFiltered
+              : featuredFiltered
+            ).map((product, i) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <ProductCard product={product} />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
