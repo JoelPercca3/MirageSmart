@@ -236,7 +236,7 @@ export default function ReviewsModal({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4"
                     onClick={handleBackdropClick}
                 >
                     <motion.div
@@ -306,8 +306,8 @@ export default function ReviewsModal({
                                         key={filter.id}
                                         onClick={() => setSelectedRating(filter.id)}
                                         className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${selectedRating === filter.id
-                                                ? "border-gray-800 bg-gray-900 text-white"
-                                                : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                                            ? "border-gray-800 bg-gray-900 text-white"
+                                            : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
                                             }`}
                                     >
                                         {filter.label}
@@ -323,8 +323,8 @@ export default function ReviewsModal({
                                             key={tag.id}
                                             onClick={() => toggleTag(tag.id)}
                                             className={`px-3 py-1 text-xs rounded-full border transition-colors ${activeTags.includes(tag.id)
-                                                    ? "border-gray-800 bg-gray-100 text-gray-800"
-                                                    : "border-gray-200 text-gray-500 hover:border-gray-400"
+                                                ? "border-gray-800 bg-gray-100 text-gray-800"
+                                                : "border-gray-200 text-gray-500 hover:border-gray-400"
                                                 }`}
                                         >
                                             {tag.label}

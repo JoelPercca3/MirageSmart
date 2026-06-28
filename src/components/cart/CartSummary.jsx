@@ -63,12 +63,12 @@ export default function CartSummary({ couponData, onCheckout }) {
       </div>
 
       {onCheckout ? (
-        <Button size="lg" className="w-full" onClick={onCheckout}>
+        <Button size="lg" className="w-full cursor-pointer" variant="dark" onClick={onCheckout}>
           Proceder al pago
         </Button>
       ) : (
-        <Link to="/checkout">
-          <Button size="lg" className="w-full">
+        <Link to="/checkout" className="cursor-pointer">
+          <Button size="lg" className="w-full cursor-pointer" variant="dark">
             Proceder al pago
           </Button>
         </Link>

@@ -41,7 +41,9 @@ function getRecentSearches() {
 function saveRecentSearch(term) {
   if (!term?.trim()) return;
   const clean = term.trim();
-  const prev = getRecentSearches().filter((s) => s.toLowerCase() !== clean.toLowerCase());
+  const prev = getRecentSearches().filter(
+    (s) => s.toLowerCase() !== clean.toLowerCase(),
+  );
   const next = [clean, ...prev].slice(0, MAX_RECENT);
   localStorage.setItem(RECENT_KEY, JSON.stringify(next));
 }
@@ -123,8 +125,11 @@ export default function Navbar() {
       const main = rawCategories.filter((cat) => !cat.parent_id);
       setCategoriesWithSub(
         main
-          .map((c) => ({ ...c, subcategorias: rawCategories.filter((s) => s.parent_id === c.id) }))
-          .slice(0, 7)
+          .map((c) => ({
+            ...c,
+            subcategorias: rawCategories.filter((s) => s.parent_id === c.id),
+          }))
+          .slice(0, 7),
       );
     }
   }, [rawCategories]);
@@ -182,7 +187,8 @@ export default function Navbar() {
     };
     if (isSearchActive) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [isSearchActive]);
 
@@ -272,8 +278,9 @@ export default function Navbar() {
   // ── Dropdown del buscador: qué mostrar ───────────────────────────────────
   // Caso A: escribiendo ≥2 chars → resultados de API  (como antes)
   // Caso B: input vacío o <2 chars + activo → búsquedas recientes
-  const showDropdown = (showSearch || isSearchActive);
-  const showRecents = showDropdown && searchInput.length < 2 && recentSearches.length > 0;
+  const showDropdown = showSearch || isSearchActive;
+  const showRecents =
+    showDropdown && searchInput.length < 2 && recentSearches.length > 0;
   const showResults = showDropdown && searchInput.length >= 2;
 
   return (
@@ -383,17 +390,25 @@ export default function Navbar() {
                       <div className="flex max-h-[500px]">
                         <div className="w-64 bg-gray-50 rounded-l-xl overflow-y-auto border-r border-gray-100">
                           {categoriesWithSub.map((cat) => (
-                            <div
+                            <li
                               key={cat.id}
-                              className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all duration-150 border-r-2 ${activeCategory?.id === cat.id
-                                ? "bg-white text-orange-500 border-orange-500"
-                                : "text-gray-600 border-transparent"
-                                }`}
+                              role="menuitem"
+                              tabIndex="0"
+                              className={`
+    flex items-center justify-between h-[38px] px-[10px] py-[2px] cursor-pointer
+    transition-all duration-200 hover:bg-[#FFF1EB]
+    ${activeCategory?.id === cat.id ? "bg-[#FFF1EB]" : ""}
+  `}
                               onMouseEnter={() => handleCategoryMouseEnter(cat)}
                             >
-                              <span className="text-sm font-medium">{cat.nombre}</span>
-                              <ChevronRight size={14} className="text-gray-400" />
-                            </div>
+                              <span className="text-[13px] font-medium text-[#222]">
+                                {cat.nombre}
+                              </span>
+                              <ChevronRight
+                                size={16}
+                                className="text-[#222]/30"
+                              />
+                            </li>
                           ))}
                         </div>
 
@@ -401,8 +416,10 @@ export default function Navbar() {
                           {activeCategory ? (
                             <>
                               <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
-                                <span className="text-orange-500 text-sm">✦</span>
-                                <h6 className="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                                <span className="text-orange-500 text-sm">
+                                  ✦
+                                </span>
+                                <h6 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">
                                   {activeCategory.nombre}
                                 </h6>
                               </div>
@@ -421,33 +438,37 @@ export default function Navbar() {
                                         className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform"
                                       />
                                     ) : (
-                                      <span className="text-[10px] text-gray-400 font-medium">TODO</span>
+                                      <span className="text-[10px] text-gray-400 font-medium">
+                                        TODO
+                                      </span>
                                     )}
                                   </div>
                                   <span className="mt-2 text-[11px] text-gray-500 group-hover:text-orange-500 leading-tight">
                                     Ver todo
                                   </span>
                                 </Link>
-                                {activeCategory.subcategorias?.slice(0, 14).map((sub) => (
-                                  <Link
-                                    key={sub.id}
-                                    to={`/category/${sub.id}`}
-                                    className="flex flex-col items-center text-center group"
-                                    style={{ width: "84px" }}
-                                    onClick={closeCompactMenu}
-                                  >
-                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
-                                      <img
-                                        src={sub.imagen_url}
-                                        alt={sub.nombre}
-                                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                                      />
-                                    </div>
-                                    <span className="mt-2 text-[11px] text-gray-600 group-hover:text-black leading-tight w-full text-center line-clamp-3 break-words hyphens-auto">
-                                      {sub.nombre}
-                                    </span>
-                                  </Link>
-                                ))}
+                                {activeCategory.subcategorias
+                                  ?.slice(0, 14)
+                                  .map((sub) => (
+                                    <Link
+                                      key={sub.id}
+                                      to={`/category/${sub.id}`}
+                                      className="flex flex-col items-center text-center group"
+                                      style={{ width: "84px" }}
+                                      onClick={closeCompactMenu}
+                                    >
+                                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
+                                        <img
+                                          src={sub.imagen_url}
+                                          alt={sub.nombre}
+                                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                      </div>
+                                      <span className="mt-2 text-[11px] text-gray-600 group-hover:text-black leading-tight w-full text-center line-clamp-3 break-words hyphens-auto">
+                                        {sub.nombre}
+                                      </span>
+                                    </Link>
+                                  ))}
                               </div>
                               {activeCategory.subcategorias?.length > 15 && (
                                 <div className="mt-4 pt-2 text-center">
@@ -506,7 +527,9 @@ export default function Navbar() {
                 >
                   <Search size={16} />
                   {!isCompact && (
-                    <span className="text-sm font-medium hidden lg:block">Buscar</span>
+                    <span className="text-sm font-medium hidden lg:block">
+                      Buscar
+                    </span>
                   )}
                 </button>
               </div>
@@ -532,7 +555,6 @@ export default function Navbar() {
                     exit={{ opacity: 0, y: 8 }}
                     className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50"
                   >
-
                     {/* ── CASO A: Búsquedas recientes ── */}
                     {showRecents && (
                       <>
@@ -556,8 +578,13 @@ export default function Navbar() {
                             onMouseDown={() => handleRecentClick(term)}
                             className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition text-left group"
                           >
-                            <Clock size={14} className="text-gray-300 flex-shrink-0" />
-                            <span className="flex-1 text-sm text-gray-700 truncate">{term}</span>
+                            <Clock
+                              size={14}
+                              className="text-gray-300 flex-shrink-0"
+                            />
+                            <span className="flex-1 text-sm text-gray-700 truncate">
+                              {term}
+                            </span>
                             <span
                               role="button"
                               onMouseDown={(e) => handleRemoveRecent(e, term)}
@@ -589,15 +616,20 @@ export default function Navbar() {
                             {searchResults.map((product) => (
                               <button
                                 key={product.id}
-                                onMouseDown={() => handleResultClick(product.id)}
+                                onMouseDown={() =>
+                                  handleResultClick(product.id)
+                                }
                                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition text-left"
                               >
                                 <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                                   {(() => {
                                     let imageUrl = null;
                                     if (product.images?.length > 0) {
-                                      const base = product.images.find((img) => !img.variant_id);
-                                      imageUrl = base?.url || product.images[0]?.url;
+                                      const base = product.images.find(
+                                        (img) => !img.variant_id,
+                                      );
+                                      imageUrl =
+                                        base?.url || product.images[0]?.url;
                                     }
                                     if (!imageUrl && product.imagen_principal) {
                                       imageUrl = product.imagen_principal;
@@ -610,7 +642,10 @@ export default function Navbar() {
                                       />
                                     ) : (
                                       <div className="w-full h-full flex items-center justify-center">
-                                        <Package size={16} className="text-gray-300" />
+                                        <Package
+                                          size={16}
+                                          className="text-gray-300"
+                                        />
                                       </div>
                                     );
                                   })()}
@@ -621,7 +656,9 @@ export default function Navbar() {
                                   </p>
                                   <p className="text-xs text-red-500 font-bold">
                                     {(() => {
-                                      const precio = product.precio_oferta || product.precio_base;
+                                      const precio =
+                                        product.precio_oferta ||
+                                        product.precio_base;
                                       return precio
                                         ? `S/ ${Number(precio).toFixed(2)}`
                                         : "Precio no disponible";
@@ -632,7 +669,9 @@ export default function Navbar() {
                             ))}
                             <button
                               onMouseDown={() => {
-                                navigate(`/products?q=${encodeURIComponent(searchInput)}`);
+                                navigate(
+                                  `/products?q=${encodeURIComponent(searchInput)}`,
+                                );
                                 handleSearchClose();
                               }}
                               className="w-full px-4 py-3 text-sm text-red-500 font-medium hover:bg-red-50 transition text-center border-t border-gray-100"
@@ -647,7 +686,6 @@ export default function Navbar() {
                         )}
                       </>
                     )}
-
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -659,26 +697,34 @@ export default function Navbar() {
             {user && <NotificationBell />}
 
             {/* Carrito */}
-            <motion.button
-              onClick={openCart}
-              className="relative p-2.5 hover:bg-gray-100 rounded-xl transition"
-              whileTap={{ scale: 0.9 }}
+            <div
+              className="relative"
+              onMouseEnter={openCart} // 👈 Al pasar cursor → abre drawer
             >
-              <ShoppingCart size={22} className="text-gray-900" />
-              <AnimatePresence>
-                {total_items > 0 && (
-                  <motion.span
-                    key={total_items}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                    className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
-                  >
-                    {total_items > 99 ? "99+" : total_items}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
+              <Link
+                to="/cart" // 👈 Al hacer clic → va a /cart
+                className="relative p-2.5 hover:bg-gray-100 rounded-xl transition block"
+                onClick={(e) => {
+                  // Prevenir que el hover del drawer se cierre al hacer clic
+                  e.stopPropagation();
+                }}
+              >
+                <ShoppingCart size={22} className="text-gray-900" />
+                <AnimatePresence>
+                  {total_items > 0 && (
+                    <motion.span
+                      key={total_items}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center"
+                    >
+                      {total_items > 99 ? "99+" : total_items}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </Link>
+            </div>
 
             {/* Wishlist */}
             {user && (
@@ -688,7 +734,10 @@ export default function Navbar() {
                   whileTap={{ scale: 0.9 }}
                   whileHover={{ scale: 1.1 }}
                 >
-                  <Heart size={22} className="text-gray-900 hover:text-red-500 transition" />
+                  <Heart
+                    size={22}
+                    className="text-gray-900 hover:text-red-500 transition"
+                  />
                 </motion.div>
               </Link>
             )}
@@ -730,7 +779,10 @@ export default function Navbar() {
                     <span className="hidden md:block text-sm font-medium text-gray-700 max-w-[80px] truncate">
                       {user.nombre.split(" ")[0]}
                     </span>
-                    <ChevronDown size={14} className="text-gray-500 hidden md:block" />
+                    <ChevronDown
+                      size={14}
+                      className="text-gray-500 hidden md:block"
+                    />
                   </>
                 )}
               </motion.button>
@@ -741,7 +793,7 @@ export default function Navbar() {
                     initial={{ opacity: 0, y: 8, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    className="absolute right-0 top-full mt-0 pt-1 w-56 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50"
+                    className="absolute right-0 top-full mt-0 pt-1 w-56 bg-white rounded-xs shadow-2xl border border-gray-100 py-2 z-50"
                   >
                     {user ? (
                       <>
@@ -760,14 +812,22 @@ export default function Navbar() {
                               </div>
                             )}
                             <div>
-                              <p className="text-sm font-semibold text-gray-800 truncate">{user.nombre}</p>
-                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                              <p className="text-sm font-semibold text-gray-800 truncate">
+                                {user.nombre}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">
+                                {user.email}
+                              </p>
                             </div>
                           </div>
                         </div>
                         {[
                           { to: "/profile", icon: User, label: "Mi perfil" },
-                          { to: "/orders", icon: Package, label: "Mis pedidos" },
+                          {
+                            to: "/orders",
+                            icon: Package,
+                            label: "Mis pedidos",
+                          },
                           { to: "/wishlist", icon: Heart, label: "Favoritos" },
                         ].map(({ to, icon: Icon, label }) => (
                           <Link
@@ -782,7 +842,10 @@ export default function Navbar() {
                         ))}
                         <hr className="my-1 border-gray-100" />
                         <button
-                          onClick={() => { logout(); setShowUser(false); }}
+                          onClick={() => {
+                            logout();
+                            setShowUser(false);
+                          }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition"
                         >
                           <LogOut size={15} />
@@ -792,7 +855,9 @@ export default function Navbar() {
                     ) : (
                       <>
                         <div className="px-4 py-3 border-b border-gray-100">
-                          <p className="text-sm text-gray-500">¡Hola! Inicia sesión</p>
+                          <p className="text-sm text-gray-500">
+                            ¡Hola! Inicia sesión
+                          </p>
                         </div>
                         <Link
                           to="/login"
@@ -824,11 +889,21 @@ export default function Navbar() {
             >
               <AnimatePresence mode="wait">
                 {isMobileMenuOpen ? (
-                  <motion.div key="x" initial={{ rotate: -90 }} animate={{ rotate: 0 }} exit={{ rotate: 90 }}>
+                  <motion.div
+                    key="x"
+                    initial={{ rotate: -90 }}
+                    animate={{ rotate: 0 }}
+                    exit={{ rotate: 90 }}
+                  >
                     <X size={22} />
                   </motion.div>
                 ) : (
-                  <motion.div key="menu" initial={{ rotate: 90 }} animate={{ rotate: 0 }} exit={{ rotate: -90 }}>
+                  <motion.div
+                    key="menu"
+                    initial={{ rotate: 90 }}
+                    animate={{ rotate: 0 }}
+                    exit={{ rotate: -90 }}
+                  >
                     <Menu size={22} />
                   </motion.div>
                 )}
@@ -839,7 +914,10 @@ export default function Navbar() {
 
         {/* ── Categorías desktop (modo normal) ──────────────────────────── */}
         {!isCompact && categoriesWithSub?.length > 0 && (
-          <div className="hidden sm:block border-t border-gray-100 relative" ref={categoryMenuRef}>
+          <div
+            className="hidden sm:block border-t border-gray-100 relative"
+            ref={categoryMenuRef}
+          >
             <div className="max-w-7xl mx-auto px-4">
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1.5">
                 <Link
@@ -903,8 +981,16 @@ export default function Navbar() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
+                                <svg
+                                  className="w-8 h-8 text-gray-300"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1}
                                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                                   />
                                 </svg>
@@ -941,7 +1027,10 @@ export default function Navbar() {
                   placeholder="Buscar productos..."
                   className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-sm outline-none focus:border-red-400"
                 />
-                <button type="submit" className="bg-red-500 text-white px-4 rounded-xl">
+                <button
+                  type="submit"
+                  className="bg-red-500 text-white px-4 rounded-xl"
+                >
                   <Search size={16} />
                 </button>
               </form>
@@ -982,11 +1071,32 @@ export default function Navbar() {
 
               {user && (
                 <div className="border-t border-gray-100 px-4 py-3 flex flex-col gap-1">
-                  <Link to="/profile" onClick={closeMobileMenu} className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl">👤 Mi perfil</Link>
-                  <Link to="/orders" onClick={closeMobileMenu} className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl">📦 Mis pedidos</Link>
-                  <Link to="/wishlist" onClick={closeMobileMenu} className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl">❤️ Favoritos</Link>
+                  <Link
+                    to="/profile"
+                    onClick={closeMobileMenu}
+                    className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
+                  >
+                    👤 Mi perfil
+                  </Link>
+                  <Link
+                    to="/orders"
+                    onClick={closeMobileMenu}
+                    className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
+                  >
+                    📦 Mis pedidos
+                  </Link>
+                  <Link
+                    to="/wishlist"
+                    onClick={closeMobileMenu}
+                    className="py-2 px-3 text-sm text-gray-700 hover:bg-gray-50 rounded-xl"
+                  >
+                    ❤️ Favoritos
+                  </Link>
                   <button
-                    onClick={() => { logout(); closeMobileMenu(); }}
+                    onClick={() => {
+                      logout();
+                      closeMobileMenu();
+                    }}
                     className="py-2 px-3 text-sm text-red-500 hover:bg-red-50 rounded-xl text-left"
                   >
                     🚪 Cerrar sesión

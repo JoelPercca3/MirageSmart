@@ -192,8 +192,7 @@ function QuantitySelector({ value, max, onChange }) {
       <button
         onClick={() => onChange(Math.max(1, value - 1))}
         disabled={value <= 1}
-        className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
-        aria-label="Reducir cantidad"
+        className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" // ← AÑADIDO
       >
         <Minus size={16} />
       </button>
@@ -201,7 +200,7 @@ function QuantitySelector({ value, max, onChange }) {
       <button
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={value >= max}
-        className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-10 h-10 flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" // ← AÑADIDO
         aria-label="Aumentar cantidad"
       >
         <Plus size={16} />
@@ -441,10 +440,10 @@ function TallaSelector({ variants, selectedVariant, onSelect, onSizeGuide }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-gray-700">Talla</p>
+        <p className="text-sm font-medium text-gray-800">Talla</p>
         <button
           onClick={onSizeGuide}
-          className="text-xs text-red-500 hover:text-red-600 font-medium">Guía de tallas</button>
+          className="text-xs rounded-none bg-blue-300 w-28 p-1 text-gray-900 hover:text-black font-medium cursor-pointer">Guía de tallas</button>
       </div>
       <div className="flex flex-wrap gap-2">
         {tallas.map((talla) => {
@@ -464,8 +463,8 @@ function TallaSelector({ variants, selectedVariant, onSelect, onSizeGuide }) {
                     : null) ?? matching.find((v) => v.stock > 0);
                 if (next) onSelect(next);
               }}
-              className={`min-w-[48px] px-4 py-2 text-sm border-2 rounded-md transition-all duration-150 font-medium
-                ${isSelected ? "border-gray-800 bg-gray-50 text-gray-900 shadow-sm" : "border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50"}
+              className={`min-w-[48px] px-4 py-2 text-sm border rounded-md transition-all duration-150 font-medium cursor-pointer // ← AÑADIDO
+                ${isSelected ? "border-gray-800 bg-orange-100 text-gray-900 shadow-sm" : "border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50"}
                 ${!hasStock ? "opacity-50 cursor-not-allowed bg-gray-100 line-through" : ""}`}
             >
               {talla}
@@ -531,8 +530,8 @@ function ColorSelector({ variants, selectedVariant, images, onSelect }) {
             >
               <div className="relative">
                 <div
-                  className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all duration-200
-                    ${isSelected ? "border-black scale-105 shadow-md" : "border-gray-300 group-hover:border-gray-600"}
+                  className={`w-18 h-20 rounded-none overflow-hidden border transition-all duration-200 cursor-pointer // ← AÑADIDO
+                    ${isSelected ? "border-black scale-105 shadow-md" : "border-gray-100"}
                     ${!hasStock ? "grayscale opacity-40" : ""}`}
                 >
                   {swatchUrl ? (
@@ -550,7 +549,7 @@ function ColorSelector({ variants, selectedVariant, images, onSelect }) {
                   {color}
                 </span>
               </div>
-              <span className={`text-xs font-medium transition-colors duration-200 ${isSelected ? "text-red-500" : "text-gray-600 group-hover:text-red-500"}`}>
+              <span className={`text-xs font-medium transition-colors duration-200 ${isSelected ? "text-black" : "text-gray-600 group-hover:text-black"}`}>
                 {color}
               </span>
               {!hasStock && <span className="text-[10px] text-gray-400 -mt-1">Agotado</span>}
@@ -922,14 +921,13 @@ export default function ProductDetailPage() {
             {/* Vendedor */}
             <div className="flex items-center gap-1 mb-5">
               <span className="text-xs text-gray-500">Vendido por</span>
-              <span className="text-xs font-medium text-gray-700 uppercase bg-gray-100 px-1.5 py-0.5 rounded">
+              <span className="text-xs font-medium text-white uppercase bg-violet-900 px-1.5 py-0.5 rounded">
                 MirageMart
               </span>
               <Tooltip content="Producto publicado directamente por MirageMart">
                 <HelpCircle size={12} className="text-gray-400" />
               </Tooltip>
             </div>
-
             {/* Marca */}
             {product.marca && (
               <p className="text-xs text-gray-400 mb-1">
@@ -1014,7 +1012,7 @@ export default function ProductDetailPage() {
                 onClick={handleWishlist}
                 aria-label={wishlisted ? "Quitar de favoritos" : "Agregar a favoritos"}
                 aria-pressed={wishlisted}
-                className="p-2 border border-gray-200 hover:border-gray-400 transition rounded-md"
+                className="p-2 border border-gray-200 hover:border-gray-400 transition rounded-md cursor-pointer" // ← AÑADIDO
               >
                 <Heart size={26} className={wishlisted ? "fill-red-500 text-red-500" : "text-gray-900"} />
               </button>

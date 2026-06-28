@@ -153,11 +153,11 @@ const Thumbnail = memo(function Thumbnail({
       onClick={() => onClick(index)}
       className={`
         flex-shrink-0 w-[60px] lg:w-[72px] relative overflow-hidden rounded-md
-        border-2 transition-all duration-150 focus-visible:outline-none
-        focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-1
+        border transition-all duration-150 focus-visible:outline-none
+        focus-visible:ring-1 focus-visible:ring-[#1e1e2f] focus-visible:ring-offset-1
         ${selected
-          ? "border-gray-900 shadow-md"
-          : "border-gray-200 hover:border-gray-400"
+          ? "border-[#1e1e2f] shadow-md"
+          : "border-gray-200 hover:border-[#1e1e2f]"
         }
       `}
       style={{ aspectRatio: "3/4" }}
@@ -173,7 +173,7 @@ const Thumbnail = memo(function Thumbnail({
         draggable={false}
       />
       {selected && (
-        <span className="absolute inset-0 ring-inset ring-2 ring-gray-900 rounded-md pointer-events-none" />
+        <span className="absolute inset-0 ring-inset ring-1 ring-[#1e1e2f] rounded-md pointer-events-none" />
       )}
     </button>
   );

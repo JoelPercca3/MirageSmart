@@ -14,7 +14,6 @@ export const useCart = () => {
     queryKey: ["cart"],
     queryFn: async () => {
       const res = await cartAPI.getCart();
-
       setCart(res.data);
       return res.data;
     },

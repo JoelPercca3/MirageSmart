@@ -2,15 +2,15 @@
 
 import { cn } from "../../utils/cn.js";
 
+// src/components/ui/Button.jsx
 const variants = {
   primary: "bg-red-500 hover:bg-red-600 text-white",
   dark: "bg-gray-900 hover:bg-gray-800 text-white",
-
+  brand: "bg-[#1e1e2f] hover:bg-[#2d2d44] text-white", // ← NUEVO variant
   secondary: "bg-gray-100 hover:bg-gray-200 text-gray-800",
   outline: "border border-red-500 text-red-500 hover:bg-red-50",
   ghost: "hover:bg-gray-100 text-gray-700",
   danger: "bg-red-600 hover:bg-red-700 text-white",
-
 };
 
 
@@ -48,6 +48,7 @@ function SpinnerIcon({ className }) {
   );
 }
 
+// src/components/ui/Button.jsx
 export default function Button({
   children,
   variant = "primary",
@@ -62,7 +63,7 @@ export default function Button({
     <button
       type={type}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium",
+        "inline-flex items-center justify-center gap-2 rounded-xs font-medium cursor-pointer", // ← Añadido cursor-pointer
         "transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed",
         variants[variant],
         sizes[size],
@@ -73,7 +74,6 @@ export default function Button({
       {...props}
     >
       {loading && <SpinnerIcon className="h-4 w-4" />}
-
       {children}
     </button>
   );

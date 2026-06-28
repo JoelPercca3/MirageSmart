@@ -124,7 +124,7 @@ export default function ReviewDetailModal({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4"
                     onClick={handleBackdropClick}
                 >
                     <motion.div

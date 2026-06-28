@@ -204,8 +204,8 @@ export default function ProductCard({ product }) {
             </div>
           )}
 
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-red-500 font-extrabold text-base">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <span className="text-red-500 font-bold text-base">
               {formatPrice(
                 product.precio_final ||
                 product.precio_oferta ||
@@ -214,7 +214,7 @@ export default function ProductCard({ product }) {
             </span>
             {product.precio_oferta &&
               Number(product.precio_base) > Number(product.precio_oferta) && (
-                <span className="text-gray-400 text-xs line-through">
+                <span className="text-gray-900 text-shadow-xs line-through">
                   {formatPrice(product.precio_base)}
                 </span>
               )}

@@ -176,7 +176,7 @@ export default function ProductsPage() {
                 <button
                   onClick={() => setParam("category_id", "")}
                   className={`text-left text-sm px-3 py-1.5 rounded-lg transition ${!category_id
-                    ? "bg-red-50 text-red-500 font-medium"
+                    ? "bg-red-50 text-black font-medium"
                     : "text-gray-600 hover:bg-gray-50"
                     }`}
                 >
@@ -189,7 +189,7 @@ export default function ProductsPage() {
                       key={cat.id}
                       onClick={() => setParam("category_id", cat.id)}
                       className={`text-left text-sm px-3 py-1.5 rounded-lg transition ${category_id == cat.id
-                        ? "bg-red-50 text-red-500 font-medium"
+                        ? "bg-red-50 text-black font-medium"
                         : "text-gray-600 hover:bg-gray-50"
                         }`}
                     >
@@ -252,9 +252,9 @@ export default function ProductsPage() {
               <button
                 key={opt.value}
                 onClick={() => setParam("sort", opt.value)}
-                className={`whitespace-nowrap text-xs px-4 py-2 rounded-full border transition ${sort === opt.value
-                  ? "bg-red-500 text-white border-red-500"
-                  : "border-gray-200 text-gray-600 hover:border-red-400 hover:text-red-500"
+                className={`whitespace-nowrap text-xs px-4 py-2 rounded-xl border transition ${sort === opt.value
+                  ? "bg-gray-700 text-white border"
+                  : "border-gray-200 text-gray-600 hover:border-black hover:text-black"
                   }`}
               >
                 {opt.label}
