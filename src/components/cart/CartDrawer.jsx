@@ -39,21 +39,21 @@ export default function CartDrawer() {
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2.5">
-                <div className="bg-red-50 p-1.5 rounded-lg">
-                  <Package size={18} className="text-red-500" />
+                <div className="bg-[#1e1e2f]/10 p-1.5 rounded-lg">
+                  <Package size={18} className="text-[#1e1e2f]" />
                 </div>
-                <span className="text-base font-bold text-gray-800">
+                <span className="text-base font-bold text-[#1e1e2f]">
                   Mi Carrito
                 </span>
                 {items.length > 0 && (
-                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  <span className="bg-[#1e1e2f] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                     {items.length}
                   </span>
                 )}
               </div>
               <button
                 onClick={closeCart}
-                className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400 hover:text-gray-600"
+                className="p-2 hover:bg-[#1e1e2f] hover:text-white rounded-lg transition text-gray-400 hover:text-white"
               >
                 <X size={18} />
               </button>
@@ -65,18 +65,23 @@ export default function CartDrawer() {
             <div className="flex-1 overflow-y-auto p-5">
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-                  <div className="bg-gray-50 rounded-full p-6">
-                    <ShoppingBag size={48} className="text-gray-200" />
+                  <div className="bg-[#1e1e2f]/5 rounded-full p-6">
+                    <ShoppingBag size={48} className="text-[#1e1e2f]/30" />
                   </div>
                   <div>
-                    <p className="text-gray-700 font-semibold mb-1">
+                    <p className="text-[#1e1e2f] font-semibold mb-1">
                       Tu carrito está vacío
                     </p>
                     <p className="text-gray-400 text-sm">
                       Agrega productos para comenzar
                     </p>
                   </div>
-                  <Button variant="outline" onClick={closeCart} size="sm">
+                  <Button
+                    variant="outline"
+                    onClick={closeCart}
+                    size="sm"
+                    className="border-[#1e1e2f] text-[#1e1e2f] hover:bg-[#1e1e2f] hover:text-white transition-colors duration-300"
+                  >
                     Ver productos
                   </Button>
                 </div>
@@ -98,7 +103,7 @@ export default function CartDrawer() {
                     Subtotal ({items.length}{" "}
                     {items.length === 1 ? "producto" : "productos"})
                   </span>
-                  <span className="font-bold text-gray-800 text-base">
+                  <span className="font-bold text-[#1e1e2f] text-base">
                     {formatPrice(subtotal)}
                   </span>
                 </div>
@@ -110,7 +115,7 @@ export default function CartDrawer() {
                 <Link
                   to="/cart"
                   onClick={closeCart}
-                  className="flex items-center justify-between w-full px-4 py-3 mb-3 border-2 border-gray-200 hover:border-gray-800 hover:bg-gray-900 rounded-xl transition-all duration-300 group"
+                  className="flex items-center justify-between w-full px-4 py-3 mb-3 border-2 border-gray-200 hover:border-[#1e1e2f] hover:bg-[#1e1e2f] rounded-xl transition-all duration-300 group"
                 >
                   <div className="flex items-center gap-2">
                     <ShoppingCart
@@ -130,7 +135,7 @@ export default function CartDrawer() {
                 {/* Botón checkout - DARK */}
                 <Link to="/checkout" onClick={closeCart}>
                   <Button
-                    className="w-full bg-gray-900 hover:bg-gray-800 text-white transition-colors duration-300"
+                    className="w-full bg-[#1e1e2f] hover:bg-[#1e1e2f]/80 text-white transition-colors duration-300"
                     size="lg"
                   >
                     Proceder al pago · {formatPrice(subtotal)}

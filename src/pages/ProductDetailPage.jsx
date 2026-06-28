@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
+import SizeGuideModal from "../components/product/SizeGuideModal.jsx";
 
 import {
   ShoppingCart,
@@ -428,7 +429,7 @@ function ProductImageGallery({ images, getImageUrl, productName }) {
 }
 // ─── Sección: Variantes ───────────────────────────────────────────────────────
 
-function TallaSelector({ variants, selectedVariant, onSelect }) {
+function TallaSelector({ variants, selectedVariant, onSelect, onSizeGuide }) {
   const tallas = useMemo(() => [
     ...new Set(variants.map((v) => parseOpts(v.opciones).Talla).filter(Boolean)),
   ], [variants]);
@@ -441,7 +442,9 @@ function TallaSelector({ variants, selectedVariant, onSelect }) {
     <div>
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-medium text-gray-700">Talla</p>
-        <button className="text-xs text-red-500 hover:text-red-600 font-medium">Guía de tallas</button>
+        <button
+          onClick={onSizeGuide}
+          className="text-xs text-red-500 hover:text-red-600 font-medium">Guía de tallas</button>
       </div>
       <div className="flex flex-wrap gap-2">
         {tallas.map((talla) => {
@@ -613,6 +616,7 @@ export default function ProductDetailPage() {
   const [wishlisted, setWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState("descripcion");
   const [addedToCart, setAddedToCart] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const [showReviewsModal, setShowReviewsModal] = useState(false);
   const [showReviewDetail, setShowReviewDetail] = useState(false);
@@ -646,24 +650,38 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (!product) return;
+
     const baseImages = product.images?.filter((img) => !img.variant_id) ?? [];
-    setDisplayImages(baseImages.length ? baseImages : product.images ?? []);
+
+    if (selectedVariant) {
+      // Si hay variante seleccionada, mostrar sus imágenes o las base
+      const variantImages = product.images?.filter((img) => img.variant_id === selectedVariant.id) ?? [];
+      setDisplayImages(variantImages.length ? variantImages : baseImages);
+    } else {
+      // Sin variante: solo imágenes base, nunca todas
+      setDisplayImages(baseImages);
+    }
+
     if (product.variants?.length > 0 && !selectedVariant) {
       setSelectedVariant(product.variants[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
-
-
-
   const handleVariantChange = useCallback((variant) => {
+    const prevOpts = parseOpts(selectedVariant?.opciones);
+    const newOpts = parseOpts(variant?.opciones);
+
     setSelectedVariant(variant);
     setQuantity(1);
-    const variantImages = product?.images?.filter((img) => img.variant_id === variant.id) ?? [];
-    const baseImages = product?.images?.filter((img) => !img.variant_id) ?? [];
-    setDisplayImages(variantImages.length ? variantImages : baseImages);
-  }, [product]);
 
+    // Solo cambiar imágenes si cambió el color
+    const colorCambio = prevOpts.Color !== newOpts.Color;
+    if (colorCambio) {
+      const variantImages = product?.images?.filter((img) => img.variant_id === variant.id) ?? [];
+      const baseImages = product?.images?.filter((img) => !img.variant_id) ?? [];
+      setDisplayImages(variantImages.length ? variantImages : baseImages);
+    }
+  }, [product, selectedVariant]);
   const openReviewsModal = useCallback(() => setShowReviewsModal(true), []);
   const closeReviewsModal = useCallback(() => setShowReviewsModal(false), []);
   const openReviewDetail = useCallback((review) => {
@@ -890,7 +908,7 @@ export default function ProductDetailPage() {
 
             {/* ── ✅ NUEVO: Todas las imágenes del producto ── */}
             <ProductImageGallery
-              images={product.images}
+              images={product.images?.filter((img) => !img.variant_id)}
               getImageUrl={getImageUrl}
               productName={product.nombre}
             />
@@ -966,6 +984,8 @@ export default function ProductDetailPage() {
                   variants={product.variants}
                   selectedVariant={selectedVariant}
                   onSelect={handleVariantChange}
+                  onSizeGuide={() => setShowSizeGuide(true)}
+
                 />
                 <ColorSelector
                   variants={product.variants}
@@ -1098,6 +1118,10 @@ export default function ProductDetailPage() {
         )}
 
       </div>
+      <SizeGuideModal
+        isOpen={showSizeGuide}
+        onClose={() => setShowSizeGuide(false)}
+      />
     </>
   );
 }

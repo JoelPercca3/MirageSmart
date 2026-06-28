@@ -664,7 +664,7 @@ export default function Navbar() {
               className="relative p-2.5 hover:bg-gray-100 rounded-xl transition"
               whileTap={{ scale: 0.9 }}
             >
-              <ShoppingCart size={22} className="text-gray-700" />
+              <ShoppingCart size={22} className="text-gray-900" />
               <AnimatePresence>
                 {total_items > 0 && (
                   <motion.span
@@ -688,7 +688,7 @@ export default function Navbar() {
                   whileTap={{ scale: 0.9 }}
                   whileHover={{ scale: 1.1 }}
                 >
-                  <Heart size={22} className="text-gray-700 hover:text-red-500 transition" />
+                  <Heart size={22} className="text-gray-900 hover:text-red-500 transition" />
                 </motion.div>
               </Link>
             )}

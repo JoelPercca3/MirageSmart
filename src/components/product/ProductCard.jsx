@@ -146,18 +146,18 @@ export default function ProductCard({ product }) {
               whileTap={{ scale: 0.9 }}
               onClick={handleAddToCart}
               disabled={addToCart.isPending}
-              className="flex-1 bg-white text-gray-800 text-xs font-bold py-2 rounded-xl shadow-lg hover:bg-red-500 hover:text-red-500 cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+              className="flex-1 bg-white text-gray-900 text-xs font-bold py-2 rounded-xl shadow-lg hover:bg-red-500 hover:text-red-500 cursor-pointer transition-colors flex items-center justify-center gap-1.5"
             >
-              <ShoppingCart size={13} />
+              <ShoppingCart size={23} />
               {addToCart.isPending ? "Agregando..." : "Agregar"}
             </motion.button>
 
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleViewProduct}
-              className="bg-white/90 text-gray-700 p-2 rounded-xl shadow-lg hover:bg-gray-100 transition flex items-center justify-center"
+              className="bg-white/90 text-gray-900 p-2 rounded-xl shadow-lg hover:bg-gray-100 transition flex items-center justify-center"
             >
-              <Eye size={14} />
+              <Eye size={18} />
             </motion.button>
           </motion.div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -13,6 +13,7 @@ import { categoryAPI } from "../api/category.api.js";
 import { useFeaturedProducts } from "../hooks/useProducts.js";
 import ProductCard from "../components/product/ProductCard.jsx";
 import { SkeletonGrid } from "../components/ui/SkeletonCard.jsx";
+
 
 // ── Animaciones ───────────────────────────────────────────
 const fadeUp = {
@@ -65,17 +66,40 @@ const SLIDES = [
 
 function HeroBanner() {
   const [current, setCurrent] = useState(0);
+  const [direction, setDirection] = useState(1);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
   useEffect(() => {
     if (!isAutoPlaying) return;
     const timer = setInterval(() => {
+      setDirection(1);
       setCurrent((prev) => (prev + 1) % SLIDES.length);
     }, 4000);
     return () => clearInterval(timer);
   }, [isAutoPlaying]);
 
+  const goTo = (index) => {
+    setDirection(index > current ? 1 : -1);
+    setCurrent(index);
+  };
+
+  const goPrev = () => {
+    setDirection(-1);
+    setCurrent((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
+  };
+
+  const goNext = () => {
+    setDirection(1);
+    setCurrent((prev) => (prev + 1) % SLIDES.length);
+  };
+
   const slide = SLIDES[current];
+
+  const variants = {
+    enter: (dir) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0 }),
+  };
 
   return (
     <div
@@ -83,75 +107,79 @@ function HeroBanner() {
       onMouseEnter={() => setIsAutoPlaying(false)}
       onMouseLeave={() => setIsAutoPlaying(true)}
     >
-      <motion.div
-        key={current}
-        className="absolute inset-0"
-        initial={{ opacity: 0, scale: 1.1 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 1.1 }}
-        transition={{ duration: 0.6 }}
-      >
-        {/* Imagen de fondo */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${slide.image})` }}
-        />
+      <AnimatePresence initial={false} custom={direction} mode="popLayout">
+        <motion.div
+          key={current}
+          custom={direction}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+          className="absolute inset-0"
+        >
+          {/* Imagen de fondo */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${slide.image})` }}
+          />
 
-        {/* Overlay oscuro para legibilidad */}
-        <div className={`absolute inset-0 bg-gradient-to-r ${slide.overlay}`} />
+          {/* Overlay */}
+          <div className={`absolute inset-0 bg-gradient-to-r ${slide.overlay}`} />
 
-        {/* Contenido */}
-        <div className="relative h-full flex items-center">
-          <div className="px-8 sm:px-14 text-white flex-1 max-w-2xl">
-            <motion.p
-              className="text-xs sm:text-sm font-semibold mb-1 text-yellow-300"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              {slide.tag}
-            </motion.p>
-            <motion.h1
-              className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-tight mb-2"
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              {slide.title}
-            </motion.h1>
-            <motion.p
-              className="text-base sm:text-lg md:text-xl opacity-90 mb-5"
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              {slide.sub}
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <Link
-                to={slide.link}
-                className="inline-flex items-center gap-2 bg-white text-gray-800 font-bold px-8 py-3.5 rounded-full hover:bg-opacity-90 hover:scale-105 transition-all text-base shadow-lg"
+          {/* Contenido */}
+          <div className="relative h-full flex items-center">
+            <div className="px-8 sm:px-14 text-white flex-1 max-w-2xl">
+              <motion.p
+                className="text-xs sm:text-sm font-semibold mb-1 text-yellow-300"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
               >
-                {slide.btn} <ArrowRight size={18} />
-              </Link>
-            </motion.div>
+                {slide.tag}
+              </motion.p>
+              <motion.h1
+                className="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-tight mb-2"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                {slide.title}
+              </motion.h1>
+              <motion.p
+                className="text-base sm:text-lg md:text-xl opacity-90 mb-5"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                {slide.sub}
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <Link
+                  to={slide.link}
+                  className="inline-flex items-center gap-2 bg-white text-gray-800 font-bold px-8 py-3.5 rounded-full hover:bg-opacity-90 hover:scale-105 transition-all text-base shadow-lg"
+                >
+                  {slide.btn} <ArrowRight size={18} />
+                </Link>
+              </motion.div>
+            </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </AnimatePresence>
 
-      {/* Flechas de navegación */}
+      {/* Flechas */}
       <button
-        onClick={() => setCurrent((prev) => (prev - 1 + SLIDES.length) % SLIDES.length)}
+        onClick={goPrev}
         className="absolute left-3 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full transition text-white z-10"
       >
         <ChevronLeft size={22} />
       </button>
       <button
-        onClick={() => setCurrent((prev) => (prev + 1) % SLIDES.length)}
+        onClick={goNext}
         className="absolute right-3 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/60 backdrop-blur-sm rounded-full transition text-white z-10"
       >
         <ChevronRight size={22} />
@@ -162,7 +190,7 @@ function HeroBanner() {
         {SLIDES.map((_, i) => (
           <button
             key={i}
-            onClick={() => setCurrent(i)}
+            onClick={() => goTo(i)}
             className={`rounded-full transition-all ${i === current ? "w-8 h-2.5 bg-white" : "w-2.5 h-2.5 bg-white/50"
               }`}
           />
